@@ -1,3 +1,4 @@
 # thermostat
 Thermostat control as a pro-environmental behaviour Masters dissertation
-And this is a line from R Studio
+This is a line from R Studio
+And this is a line from GitHub
