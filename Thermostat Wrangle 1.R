@@ -3,7 +3,7 @@ library(data.table)
 library(psych)
 library(gridExtra)
 
-setwd("/home/vanagpau/R/Thermostat-Control-study")
+setwd("/home/vanagpau/R/thermostat")
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
 
@@ -29,6 +29,9 @@ cs <- cs %>% lapply(gsub, pattern = "7 = Very liberal", replacement = 7)
 
 #Coerce list back to tibble
 cs <- as_tibble(cs)
+
+#Convert Crescent & Warneford to factors
+cs$Q3 <- as.factor(cs$Q3)
 
 #Convert char strings to numerics for col 15-111 (survey main body)
 cs [,15:111] <- as_tibble(
@@ -93,6 +96,24 @@ EAI_mean = mean(c(
 #Create EAI sub-scales data frame
 EAI_subscales <- cs %>% select(EAI1:EAI12)
 
+#Create Activist and Pragmatist variables from likely PEB scale
+cs <- cs %>% rowwise() %>% mutate(
+  PEB_activist = mean(c(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11), na.rm = TRUE))
+cs <- cs %>% rowwise() %>% mutate(
+  PEB_pragmatist = mean(c(
+    Q7_12, Q7_13, Q7_14, Q7_15, Q7_16, Q7_17, Q7_18, Q7_19, Q7_20, Q7_21, Q7_22), na.rm = TRUE))
+cs
+
+#Alphas
+#Activist
+cs %>% select(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11) %>% alpha()
+#Pragmatist
+cs %>% select(Q7_12, Q7_13, Q7_14, Q7_15, Q7_16, Q7_17, Q7_18, Q7_19, Q7_20, Q7_21, Q7_22) %>% alpha()
+#Descriptives
+summary(cs$PEB_activist)
+summary(cs$PEB_pragmatist)
+
+
 #Plot histogram of EAI_mean per subject
 cs %>% ggplot(aes(x=EAI_mean)) + geom_histogram(binwidth = 0.1)
 
@@ -111,9 +132,21 @@ plot1 <- ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = likelyPEB_mean
 plot2 <- ggplot(cs) + geom_smooth(mapping = aes(x = NEP_mean, y = likelyPEB_mean))
 plot3 <- ggplot(cs) + geom_smooth(mapping = aes(x = BSCS_mean, y = likelyPEB_mean))
 grid.arrange(plot1, plot2, plot3, ncol = 3)
+ggplot(cs) + geom_smooth(mapping = aes(x = thermo_mean, y = EAI_mean))
 
-#Plot of attitude to 
+
+#Plot of attitude to likelyPEB
 ggplot (cs) + geom_smooth(mapping = aes(x = thermo_mean, y = likelyPEB_mean))
+ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
+  x = thermo_mean, y = EAI_mean), colour = "red") + geom_point(
+    mapping = aes(x = thermo_mean, y = EAI_mean), colour = "red") + geom_smooth(
+    method = "lm", se = FALSE, mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue") + 
+  geom_point(mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
+  labs(x = "Pro-environmental Attitude to Thermostat", y = "General Environmental Attitude Scale (Mean)") +
+  annotate(geom = "point", x = -1, y = 2.8, colour = "blue", shape = "triangle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.8, label = " NEP", hjust = "left", size = 6) +
+  annotate(geom = "point", x = -1, y = 2.5, colour = "red", shape = "circle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.5, label = " EAI", hjust = "left", size = 6)
 
 #Normal distribution tests
 #Q-Q plots
@@ -128,21 +161,10 @@ qqline(cs$EAI_mean, ylab = "EAI_mean")
 qqnorm(cs$likelyPEB_mean, ylab = "thermo_attitude")
 qqline(cs$likelyPEB_mean, ylab = "thermo_attitude")
 
-#Shapiro-Wilk test = all normal
-lapply(cs[132:136], shapiro.test)
+#Shapiro-Wilk test on all scales
+lapply(cs[132:138], shapiro.test)
+#Results  = PEB_pragmatist = non-normal, PEB_Activist and thermo_mean borderline 
 
-#Correlations
-with(cs, cor.test(NEP_mean, likelyPEB_mean))
-with(cs, cor.test(EAI_mean, likelyPEB_mean))
-
-#Significance test of EAI vs NEP correlations vs likelyPEB
-r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
-  with(cs, cor(NEP_mean, likelyPEB_mean))), n2=88)
-
-#Compare moral values with likelyPEB
-cor(cs$likelyPEB_mean, cs$Q9_1, use = "complete.obs")
-
-#Correlation of political orientation w. likely_PEB
-cor(cs$likelyPEB_mean, cs$Q35_1, use = "complete.obs")
-
+hist(cs$PEB_activist, breaks = 7)
+hist(cs$PEB_pragmatist, breaks = 7)
 
