@@ -2,6 +2,8 @@ library(tidyverse)
 library(data.table)
 library(psych)
 library(gridExtra)
+library(corrplot)
+library(GPArotation)
 
 setwd("/home/vanagpau/R/thermostat")
 VEB <- fread ("VEB.csv")
@@ -123,6 +125,8 @@ cs <- cbind(cs, NEP_mean = rowMeans(NEP, na.rm = TRUE))
 cs <- cbind(cs, likelyPEB_mean = rowMeans(likelyPEB, na.rm = TRUE))
 cs <- cbind(cs, BSCS_mean = rowMeans(BSCS, na.rm = TRUE))
 cs <- cbind(cs, thermo_mean = rowMeans(thermo_attitude, na.rm = TRUE))
+cs <- cbind(cs, MAC_mean = rowMeans(moral_ascoop, na.rm = TRUE))
+cs <- cbind(cs, MFT_mean = rowMeans(moral_found, na.rm = TRUE))
 
 #Scatter plot of NEP vs EAI
 ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = NEP_mean))
@@ -130,7 +134,9 @@ ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = NEP_mean))
 #Smoothed line plots of NEP, EAI and BSCS scales vs likelyPEB
 plot1 <- ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = likelyPEB_mean))
 plot2 <- ggplot(cs) + geom_smooth(mapping = aes(x = NEP_mean, y = likelyPEB_mean))
-plot3 <- ggplot(cs) + geom_smooth(mapping = aes(x = BSCS_mean, y = likelyPEB_mean))
+plot3 <-  ggplot(cs, mapping = aes(x = BSCS_mean, y = likelyPEB_mean)) + geom_smooth(
+  ) + geom_point() + geom_smooth(method = "lm", colour = "black", size = 0.5) + ggtitle(
+    "Brief Self-Control Scale comparison to claimed PEB")
 grid.arrange(plot1, plot2, plot3, ncol = 3)
 ggplot(cs) + geom_smooth(mapping = aes(x = thermo_mean, y = EAI_mean))
 
@@ -168,3 +174,156 @@ lapply(cs[132:138], shapiro.test)
 hist(cs$PEB_activist, breaks = 7)
 hist(cs$PEB_pragmatist, breaks = 7)
 
+
+#Factor Analysis
+
+#FA of Attitudes scale
+cs %>% select(Q8_1:Q8_9) %>% cor() %>% fa.parallel(
+  n.obs=88, main = "Parallel Analysis scree plot - Attitude scale")
+
+#FA of likely PEB scale
+#Assumption tests: KMO and Barlett's sphericity
+cs %>% select(Q7_1:Q7_22) %>% cortest()
+cs %>% select(Q7_1:Q7_22) %>% KMO()
+#Parallel analysis suggests 2 factors
+cs %>% select(Q7_1:Q7_22) %>% cor(
+  use = "complete.obs") %>% fa.parallel(
+    n.obs=88, main = "Parallel Analysis scree plot - likely PEB")
+cs %>% select(Q7_1:Q7_22) %>% cor(
+  use = "complete.obs") %>% fa(nfactors=2)
+
+#FA of MAC scale
+#Assumption tests: KMO and Barlett's sphericity
+cs %>% select(Q9_1:Q9_7) %>% cortest()
+cs %>% select(Q9_1:Q9_7) %>% KMO()
+#Parallel analysis suggests 1 factors
+cs %>% select(Q9_1:Q9_7) %>% cor(
+  use = "complete.obs") %>% fa.parallel(
+    n.obs=88, main = "Parallel Analysis scree plot - Morality as Co-operation")
+
+#FA of MFT scale
+#Assumption tests: KMO and Barlett's sphericity
+cs %>% select(Q10_1:Q10_7) %>% cortest()
+cs %>% select(Q10_1:Q10_7) %>% KMO()
+#Parallel analysis suggests 1 factors
+cs %>% select(Q10_1:Q10_7) %>% cor(
+  use = "complete.obs") %>% fa.parallel(
+    n.obs=88, main = "Parallel Analysis scree plot - Moral Foundations Theory")
+
+#FA of BSCS scale
+#Assumption tests: KMO and Barlett's sphericity
+cs %>% select(Q11_1:Q11_13) %>% cortest()
+cs %>% select(Q11_1:Q11_13) %>% KMO()
+#Parallel analysis suggests 1 factors
+cs %>% select(Q11_1:Q11_13) %>% cor(
+  use = "complete.obs") %>% fa.parallel(
+    n.obs=88, main = "Parallel Analysis scree plot - Brief Self-Control Scale")
+
+
+#Correlations EAI vs NEP
+with(cs, cor.test(NEP_mean, likelyPEB_mean))
+with(cs, cor.test(EAI_mean, likelyPEB_mean))
+with(cs, cor.test(NEP_mean, thermo_mean))
+with(cs, cor.test(EAI_mean, thermo_mean))
+
+#Significance test of EAI vs NEP correlations vs likelyPEB
+r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
+  with(cs, cor(NEP_mean, likelyPEB_mean))), n2=88)
+
+#Significance test of EAI vs NEP correlations vs attitudes
+r.test(r12=(with(cs, cor(EAI_mean, thermo_mean))), n=88, r34=(
+  with(cs, cor(NEP_mean, thermo_mean))), n2=88)
+
+#Correlations and significance compared to CADM
+
+#Correlation of political orientation w. likely_PEB
+with(cs, cor.test(Q35_1, likelyPEB_mean))
+with(cs, cor.test(Q35_1, PEB_activist))
+with(cs, cor.test(Q35_1, PEB_pragmatist))
+
+#Correlation Awareness of Consequences w. likely PEB
+with(cs, cor.test(Q8_1, likelyPEB_mean))
+with(cs, cor.test(Q8_1, PEB_activist))
+with(cs, cor.test(Q8_1, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_1, likelyPEB_mean))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(Q8_1, PEB_activist))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(Q8_1, PEB_pragmatist))), n2 = 13215, r34 = .22)
+
+#Correlation Ascription of Responsibility w. likely PEB
+with(cs, cor.test(Q8_4, likelyPEB_mean))
+with(cs, cor.test(Q8_4, PEB_activist))
+with(cs, cor.test(Q8_4, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_4, likelyPEB_mean))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(Q8_4, PEB_activist))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(Q8_4, PEB_pragmatist))), n2 = 4217, r34 = .10)
+
+#Correlation NEP w. likely PEB
+with(cs, cor.test(NEP_mean, likelyPEB_mean))
+with(cs, cor.test(NEP_mean, PEB_activist))
+with(cs, cor.test(NEP_mean, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, likelyPEB_mean))), n2 = 3499, r34 = .09)
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .09)
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
+
+#Correlation Social Norm w. likely PEB
+with(cs, cor.test(Q8_3, likelyPEB_mean))
+with(cs, cor.test(Q8_3, PEB_activist))
+with(cs, cor.test(Q8_3, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_3, likelyPEB_mean))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(Q8_3, PEB_activist))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(Q8_3, PEB_pragmatist))), n2 = 14170, r34 = .24)
+
+#Correlation Perceived Behavioural Control w. likely PEB
+with(cs, cor.test(Q8_5, likelyPEB_mean))
+with(cs, cor.test(Q8_5, PEB_activist))
+with(cs, cor.test(Q8_5, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_5, likelyPEB_mean))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor(Q8_5, PEB_activist))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor(Q8_5, PEB_pragmatist))), n2 = 15020, r34 = .40)
+
+#Correlation Habits w. likely PEB
+with(cs, cor.test(Q8_2, likelyPEB_mean))
+with(cs, cor.test(Q8_2, PEB_activist))
+with(cs, cor.test(Q8_2, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_2, likelyPEB_mean))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor(Q8_2, PEB_activist))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor(Q8_2, PEB_pragmatist))), n2 = 7747, r34 = .46)
+
+#Correlation Intentions w. likely PEB
+with(cs, cor.test(Q8_6, likelyPEB_mean))
+with(cs, cor.test(Q8_6, PEB_activist))
+with(cs, cor.test(Q8_6, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(Q8_6, likelyPEB_mean))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor(Q8_6, PEB_activist))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor(Q8_6, PEB_pragmatist))), n2 = 12945, r34 = .55)
+
+#Correlation Attitudes w. likely PEB
+with(cs, cor.test(thermo_mean, likelyPEB_mean))
+with(cs, cor.test(thermo_mean, PEB_activist))
+with(cs, cor.test(thermo_mean, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(thermo_mean, likelyPEB_mean))), n2 = 14053, r34 = .36)
+r.test(n = 88, r12 = (with(cs, cor(thermo_mean, PEB_activist))), n2 = 14053, r34 = .36)
+r.test(n = 88, r12 = (with(cs, cor(thermo_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
+
+#Correlation BSCS with likelyPEB
+with(cs, cor.test(BSCS_mean, likelyPEB_mean))
+with(cs, cor.test(BSCS_mean, PEB_activist))
+with(cs, cor.test(BSCS_mean, PEB_pragmatist))
+
+
+#Correlation MAC w. likely PEB
+with(cs, cor.test(MAC_mean, likelyPEB_mean))
+with(cs, cor.test(MAC_mean, PEB_activist))
+with(cs, cor.test(MAC_mean, PEB_pragmatist))
+#Correlation MFT w. likely PEB
+with(cs, cor.test(MFT_mean, likelyPEB_mean))
+with(cs, cor.test(MFT_mean, PEB_activist))
+with(cs, cor.test(MFT_mean, PEB_pragmatist))
+
+#Correlation of morality scales with thermo attitude
+with(cs, cor.test(MAC_mean, thermo_mean))
+with(cs, cor.test(MFT_mean, thermo_mean))
+with(cs, cor.test(MAC_mean, NEP_mean))
+with(cs, cor.test(MFT_mean, EAI_mean))
+with(cs, cor.test(MAC_mean, EAI_mean))
+with(cs, cor.test(MFT_mean, NEP_mean))
