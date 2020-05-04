@@ -321,9 +321,16 @@ with(cs, cor.test(MFT_mean, PEB_activist))
 with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
 #Correlation of morality scales with thermo attitude
-with(cs, cor.test(MAC_mean, thermo_mean))
-with(cs, cor.test(MFT_mean, thermo_mean))
-with(cs, cor.test(MAC_mean, NEP_mean))
-with(cs, cor.test(MFT_mean, EAI_mean))
-with(cs, cor.test(MAC_mean, EAI_mean))
-with(cs, cor.test(MFT_mean, NEP_mean))
+cs %>% select(MAC_mean, MFT_mean, thermo_mean, likelyPEB_mean) %>% cor(
+  ) %>% corrplot(method = "number", type = "lower")
+
+#Multiple regression models
+model <- lm (likelyPEB_mean ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+               NEP_mean + EAI_mean, data = cs)
+summary(model)
+model_activist <- lm (PEB_activist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+               NEP_mean + EAI_mean, data = cs)
+summary(model_activist)
+model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+               NEP_mean + EAI_mean, data = cs)
+summary(model_pragmatist)
