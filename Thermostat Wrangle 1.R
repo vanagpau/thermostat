@@ -10,7 +10,7 @@ VEB <- fread ("VEB.csv")
 as_tibble (VEB)
 
 #Create filter for all completed and non-preview surveys: cs ('completed surveys')
-cs <- filter(VEB, Status == "IP Address", Progress == "100")
+cs <- VEB %>% filter(Status == "IP Address", Progress == "100")
 
 #Replace Likert strings with numbers as characters
 cs <- cs %>% lapply(gsub, pattern = "Strongly agree", replacement = 3)
@@ -27,7 +27,6 @@ cs <- cs %>% lapply(gsub, pattern = "5 = Very much", replacement = 5)
 cs <- cs %>% lapply(gsub, pattern = "1 = Not at all", replacement = 1)
 cs <- cs %>% lapply(gsub, pattern = "1 = Very conservative", replacement = 1)
 cs <- cs %>% lapply(gsub, pattern = "7 = Very liberal", replacement = 7)
-
 
 #Coerce list back to tibble
 cs <- as_tibble(cs)
@@ -334,3 +333,12 @@ summary(model_activist)
 model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
                NEP_mean + EAI_mean, data = cs)
 summary(model_pragmatist)
+
+#Match Room numbers to Time Series data
+#Show any duplicate room numbers
+cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
+cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
+#there is one duplicate in Crescent - Room L04F
+#to remove this room: cs %>% filter(Q4 != "L04F")
+
+
