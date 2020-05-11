@@ -10,10 +10,10 @@ library(vroom)
 #Big data - with unit interactions
 setwd("/home/vanagpau/Documents/PSYC 7007 Dissertation/DATA/Raw thermostat data 24th March/Data for Paul Vanags")
 #Get a sample of the raw interaction data
-sample_big_crescent <- vroom ("FilteredLog_CRESCENT.csv", n_max = 100000, 
+big_crescent <- vroom ("FilteredLog_CRESCENT.csv", 
                               col_select = c(1:6), col_names = c(
                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
-sample_big_warneford <- vroom ("FilteredLog_WARNEFORD.csv", n_max = 100000, 
+big_warneford <- vroom ("FilteredLog_WARNEFORD.csv", 
                                col_select = c(1:6), col_names = c(
                                  "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
 
