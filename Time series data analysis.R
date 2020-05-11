@@ -8,7 +8,7 @@ library(lubridate)
 library(vroom)
 
 #Big data - with unit interactions
-setwd("/home/vanagpau/Documents/PSYC 7007 Dissertation/DATA/Raw thermostat data 24th March/Data for Paul Vanags")
+setwd("E:/R files")
 #Get a sample of the raw interaction data
 big_crescent <- vroom ("FilteredLog_CRESCENT.csv", 
                               col_select = c(1:6), col_names = c(
@@ -29,6 +29,11 @@ as.factor(irus_data$Site)
 #Merge the date and time fields
 irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
 
+#Merge the Site and Room Name fields
+irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
+#Remove any spaces (to ensure matching)
+irus_data$site_room <- gsub('\\s+', '', irus_data$site_room)
+
 #Controversially ignore all the default settings (19 and 21 defaults)
 # <- irus_data %>% filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10)
 
@@ -37,6 +42,7 @@ irus_data <- irus_data %>% mutate(avg_setpoint_before = ifelse(Date > as.Date(
   "2020-02-01") & Date < as.Date("2020-02-14"), mean(Setpoint), NA))
 irus_data <- irus_data %>% mutate(avg_setpoint_after = ifelse(Date > as.Date(
   "2020-02-14") & Date < as.Date("2020-02-28"), mean(Setpoint), NA))
+
 irus_data <- irus_data %>% mutate(sub19_before = ifelse(Date > as.Date(
   "2020-02-01") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
 irus_data <- irus_data %>% mutate(sub19_after = ifelse(Date > as.Date(
@@ -44,12 +50,12 @@ irus_data <- irus_data %>% mutate(sub19_after = ifelse(Date > as.Date(
 
 #Calculate number of settings below 19 degrees, before and after 14th Feb (posters date)
 
-set_low_before <- irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
-  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(Name) %>% count()
-set_low_after <- irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(Name) %>% count()
-
-
+irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
+  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_before")
+irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_after")
 
 
 #PLOTS

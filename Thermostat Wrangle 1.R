@@ -5,12 +5,13 @@ library(gridExtra)
 library(corrplot)
 library(GPArotation)
 
-setwd("/home/vanagpau/R/thermostat")
+setwd("E:/R files")
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
 
 #Create filter for all completed and non-preview surveys: cs ('completed surveys')
 cs <- VEB %>% filter(Status == "IP Address", Progress == "100")
+
 
 #Replace Likert strings with numbers as characters
 cs <- cs %>% lapply(gsub, pattern = "Strongly agree", replacement = 3)
@@ -28,11 +29,32 @@ cs <- cs %>% lapply(gsub, pattern = "1 = Not at all", replacement = 1)
 cs <- cs %>% lapply(gsub, pattern = "1 = Very conservative", replacement = 1)
 cs <- cs %>% lapply(gsub, pattern = "7 = Very liberal", replacement = 7)
 
+#Convert Crescent & Warneford to characters
+cs$Q3 <- as.character(cs$Q3)
+
 #Coerce list back to tibble
 cs <- as_tibble(cs)
 
-#Convert Crescent & Warneford to factors
-cs$Q3 <- as.factor(cs$Q3)
+#Rename halls to match with thermostat data
+cs[cs$Q3 == "Crescent Hall", "Q3"] <- as.character("CRESCENT")
+cs[cs$Q3 == "Warneford Hall", "Q3"] <- as.character("WARNEFORD")
+#Combine columns to produce matchable room string
+cs$site_room <- paste(cs$Q3, cs$Q4, cs$Q21)
+#Remove spaces for matching
+cs$site_room <- gsub('\\s+', '', cs$site_room)
+
+
+
+#Add data from irus_data tibble = left_join(df1, df2, "Id")
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
+  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_before"), by = "site_room")
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_after"), by = "site_room")
+
 
 #Convert char strings to numerics for col 15-111 (survey main body)
 cs [,15:111] <- as_tibble(
@@ -335,10 +357,10 @@ model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + therm
 summary(model_pragmatist)
 
 #Match Room numbers to Time Series data
-#Show any duplicate room numbers
+#Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
 cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
 cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
-#there is one duplicate in Crescent - Room L04F
+
 #to remove this room: cs %>% filter(Q4 != "L04F")
 
 
