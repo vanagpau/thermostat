@@ -44,9 +44,7 @@ cs$site_room <- paste(cs$Q3, cs$Q4, cs$Q21)
 cs$site_room <- gsub('\\s+', '', cs$site_room)
 
 
-
 #Add data from irus_data tibble = left_join(df1, df2, "Id")
-
 cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
   "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_before"), by = "site_room")
@@ -55,6 +53,15 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < a
   "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after"), by = "site_room")
 
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
+  "2020-02-14")) %>% group_by(site_room) %>% summarise(
+    avg_setpoint_before = mean(Setpoint)), by = "site_room")
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28")) %>% group_by(site_room) %>% summarise(
+    avg_setpoint_after = mean(Setpoint)), by = "site_room")
+
+cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 
 #Convert char strings to numerics for col 15-111 (survey main body)
 cs [,15:111] <- as_tibble(
@@ -362,5 +369,12 @@ cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
 cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
 
 #to remove this room: cs %>% filter(Q4 != "L04F")
+cs %>% ggplot() + geom_point(mapping = aes(
+  x = site_room, y = avg_setpoint_before), colour = "blue") + geom_point(mapping = aes(
+    x = site_room, y = avg_setpoint_after), colour = "red") + theme(
+      axis.text.x = element_text(angle = 90, size = 8))
 
+cs %>% ggplot() + geom_point(mapping = aes(
+  x = site_room, y = thermo_change), colour = "blue") + theme(
+    axis.text.x = element_text(angle = 90, size = 8))
 

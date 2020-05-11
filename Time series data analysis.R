@@ -26,8 +26,7 @@ irus_data <- irus_data %>% filter(Type == "Room Heater") %>% arrange(Name)
 as.factor(irus_data$Name)
 as.factor(irus_data$Site)
 
-#Merge the date and time fields
-irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
+
 
 #Merge the Site and Room Name fields
 irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
@@ -38,10 +37,10 @@ irus_data$site_room <- gsub('\\s+', '', irus_data$site_room)
 # <- irus_data %>% filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10)
 
 #Calc mean room temp before and after posters on 14/2 for each room, append to irus_data
-irus_data <- irus_data %>% mutate(avg_setpoint_before = ifelse(Date > as.Date(
-  "2020-02-01") & Date < as.Date("2020-02-14"), mean(Setpoint), NA))
-irus_data <- irus_data %>% mutate(avg_setpoint_after = ifelse(Date > as.Date(
-  "2020-02-14") & Date < as.Date("2020-02-28"), mean(Setpoint), NA))
+
+irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
+  "2020-02-14")) %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(Setpoint)) 
+
 
 irus_data <- irus_data %>% mutate(sub19_before = ifelse(Date > as.Date(
   "2020-02-01") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
@@ -56,6 +55,10 @@ irus_data %>% filter(Date > as.Date("2020-02-01") & Date < as.Date(
 irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
   "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after")
+
+#Merge the date and time fields
+irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
+
 
 
 #PLOTS
