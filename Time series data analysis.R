@@ -10,12 +10,12 @@ library(vroom)
 #Big data - with unit interactions
 setwd("E:/R files")
 #Get a sample of the raw interaction data
-big_crescent <- vroom ("FilteredLog_CRESCENT.csv", 
-                              col_select = c(1:6), col_names = c(
-                                "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
-big_warneford <- vroom ("FilteredLog_WARNEFORD.csv", 
-                               col_select = c(1:6), col_names = c(
-                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+# big_crescent <- vroom ("FilteredLog_CRESCENT.csv",
+#                                col_select = c(1:6), col_names = c(
+#                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+# big_warneford <- vroom ("FilteredLog_WARNEFORD.csv",
+#                                col_select = c(1:6), col_names = c(
+#                                  "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
 
 #Read in the Irus data (hourly, no interaction)
 irus_data <- vroom ("IrusData - Energy data Crescent and Warneford.csv", 
@@ -62,14 +62,6 @@ irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
 
 
 #PLOTS
-
-#Histograms of each room setpoints (v air temp)
-irus_data %>% group_by(Name, Setpoint) %>% count() %>% filter(Name == "A01A") %>% ggplot(
-  mapping = aes(x = Setpoint, y = n)) + geom_col() + xlim(18, 24) + ggtitle("A01A")
-irus_data %>% group_by(Name, Setpoint) %>% count() %>% filter(Name == "A01B") %>% ggplot(
-  mapping = aes(x = Setpoint, y = n)) + geom_col() + xlim(18, 24) + ggtitle("A01B")
-irus_data %>% group_by(Name, Setpoint) %>% count() %>% filter(Name == "A01C") %>% ggplot(
-  mapping = aes(x = Setpoint, y = n)) + geom_col() + xlim(18, 24) + ggtitle("A01C")
 
 #Plot of Setpoint
 plotA01A <- irus_data %>% filter(Name == "A01A") %>% ggplot () + geom_point(
