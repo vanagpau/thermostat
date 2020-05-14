@@ -15,7 +15,7 @@ as_tibble (VEB)
 
 #Create filter for all completed and non-preview surveys: cs ('completed surveys')
 cs <- VEB %>% filter(Status == "IP Address", Progress == "100")
-
+  
 #Replace Likert strings with numbers as characters
 cs <- cs %>% lapply(gsub, pattern = "Strongly agree", replacement = 3)
 cs <- cs %>% lapply(gsub, pattern = "Agree", replacement = 2)
@@ -46,76 +46,6 @@ cs$site_room <- paste(cs$Q3, cs$Q4, cs$Q21)
 #Remove spaces for matching
 cs$site_room <- gsub('\\s+', '', cs$site_room)
 
-#LOAD IN THE THERMOSTAT DATA
-
-#Get a sample of the raw interaction data
-# big_crescent <- vroom ("FilteredLog_CRESCENT.csv",
-#                                col_select = c(1:6), col_names = c(
-#                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
-# big_warneford <- vroom ("FilteredLog_WARNEFORD.csv",
-#                                col_select = c(1:6), col_names = c(
-#                                  "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
-
-#Read in the Irus data (hourly, no interaction)
-irus_data <- vroom ("IrusData - Energy data Crescent and Warneford.csv", 
-                    col_names = TRUE, col_select = c(1:5, 7, 10, 11, 25, 26))
-#Filter for room heaters only (takes out water heaters, kitchens etc)
-irus_data <- irus_data %>% filter(Type == "Room Heater") %>% arrange(Name)
-
-as.factor(irus_data$Name)
-as.factor(irus_data$Site)
-
-#Merge the Site and Room Name fields
-irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
-#Remove any spaces (to ensure matching)
-irus_data$site_room <- gsub('\\s+', '', irus_data$site_room)
-
-#Controversially ignore all the default settings (19 and 21 defaults)
-# <- irus_data %>% filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10)
-
-#Calc mean room temp before and after posters on 14/2 for each room, append to irus_data
-
-irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
-  "2020-02-14")) %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(Setpoint)) 
-
-irus_data <- irus_data %>% mutate(sub19_before = ifelse(Date > as.Date(
-  "2020-01-30") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
-
-irus_data <- irus_data %>% mutate(sub19_after = ifelse(Date > as.Date(
-  "2020-02-14") & Date < as.Date("2020-02-28") & Setpoint <19, Setpoint, NA))
-
-#Calculate number of settings below 19 degrees, before and after 14th Feb (posters date)
-
-irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
-  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
-    name = "sub19_before")
-irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
-    name = "sub19_after")
-
-#Merge the date and time fields
-irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
-
-#Add data from irus_data tibble = left_join(df1, df2, "Id")
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
-  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
-    name = "sub19_before"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
-
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
-    name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
-
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
-  "2020-02-14")) %>% group_by(site_room) %>% summarise(
-    avg_setpoint_before = mean(Setpoint)), by = "site_room")
-
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% group_by(site_room) %>% summarise(
-    avg_setpoint_after = mean(Setpoint)), by = "site_room")
-
-cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
-cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
-
 #Convert char strings to numerics for col 15-111 (survey main body)
 cs [,15:111] <- as_tibble(
   sapply(cs[,15:111], as.numeric, USE.NAMES = FALSE))
@@ -138,22 +68,6 @@ cs[c(31,33,35,36,39,41,43,44,46,48,51,53)] <- lapply (
 #Apply reverse scoring to BSCS
 cs[c(100,101,102,103,105,107,108,110,111)] <- lapply (
   cs[c(100,101,102,103,105,107,108,110,111)], reverse5)
-
-#Calculate Cronbach's Alpha
-NEP <- cs %>% select(Q5_1:Q5_15)
-alpha(NEP)
-EAI <- cs %>% select(Q6_1:Q6_24)
-alpha(EAI)
-BSCS <- cs %>% select(Q11_1:Q11_13)
-alpha(BSCS)
-likelyPEB <- cs %>% select(Q7_1:Q7_22)
-alpha(likelyPEB)
-thermo_attitude <- cs %>% select(Q8_1:Q8_9)
-alpha(thermo_attitude)
-moral_ascoop <- cs %>% select(Q9_1:Q9_7)
-alpha(moral_ascoop)
-moral_found <- cs %>% select(Q10_1:Q10_7)
-alpha(moral_found)
 
 #Calculate all mean averages for EAI
 means_EAI <- lapply(EAI, mean, na.rm = TRUE)
@@ -185,20 +99,6 @@ cs <- cs %>% rowwise() %>% mutate(
 cs <- cs %>% rowwise() %>% mutate(
   PEB_pragmatist = mean(c(
     Q7_12, Q7_13, Q7_14, Q7_15, Q7_16, Q7_17, Q7_18, Q7_19, Q7_20, Q7_21, Q7_22), na.rm = TRUE))
-cs
-
-#Alphas
-#Activist
-cs %>% select(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11) %>% alpha()
-#Pragmatist
-cs %>% select(Q7_12, Q7_13, Q7_14, Q7_15, Q7_16, Q7_17, Q7_18, Q7_19, Q7_20, Q7_21, Q7_22) %>% alpha()
-#Descriptives
-summary(cs$PEB_activist)
-summary(cs$PEB_pragmatist)
-
-
-#Plot histogram of EAI_mean per subject
-cs %>% ggplot(aes(x=EAI_mean)) + geom_histogram(binwidth = 0.1)
 
 #Calculate overall scores for NEP, BSCS, likelyPEB
 #creates vector of means..
@@ -209,51 +109,153 @@ cs <- cbind(cs, thermo_mean = rowMeans(thermo_attitude, na.rm = TRUE))
 cs <- cbind(cs, MAC_mean = rowMeans(moral_ascoop, na.rm = TRUE))
 cs <- cbind(cs, MFT_mean = rowMeans(moral_found, na.rm = TRUE))
 
-#Scatter plot of NEP vs EAI
-ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = NEP_mean))
 
-#Smoothed line plots of NEP, EAI and BSCS scales vs likelyPEB
-plot1 <- ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = likelyPEB_mean))
-plot2 <- ggplot(cs) + geom_smooth(mapping = aes(x = NEP_mean, y = likelyPEB_mean))
-plot3 <-  ggplot(cs, mapping = aes(x = BSCS_mean, y = likelyPEB_mean)) + geom_smooth(
-  ) + geom_point() + geom_smooth(method = "lm", colour = "black", size = 0.5) + ggtitle(
-    "Brief Self-Control Scale comparison to claimed PEB")
-grid.arrange(plot1, plot2, plot3, ncol = 3)
-ggplot(cs) + geom_smooth(mapping = aes(x = thermo_mean, y = EAI_mean))
+#LOAD IN THE THERMOSTAT DATA
+
+#Get a sample of the raw interaction data
+# big_crescent <- vroom ("FilteredLog_CRESCENT.csv",
+#                                col_select = c(1:6), col_names = c(
+#                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+# big_warneford <- vroom ("FilteredLog_WARNEFORD.csv",
+#                                col_select = c(1:6), col_names = c(
+#                                  "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+
+#Read in the Irus data (hourly, without interactions)
+irus_data <- vroom("IrusData - Energy data Crescent and Warneford.csv",
+  col_names = TRUE, col_select = c(1:5, 7, 10, 11, 25, 26)
+)
+#Filter for room heaters only (takes out water heaters, kitchens etc)
+irus_data <- irus_data %>% filter(Type == "Room Heater") %>% arrange(Name)
+
+as.factor(irus_data$Name)
+as.factor(irus_data$Site)
+
+#Merge the Site and Room Name fields
+irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
+#Remove any spaces (to ensure matching)
+irus_data$site_room <- gsub('\\s+', '', irus_data$site_room)
+
+#Merge the date and time fields
+irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
+
+#code to take out all the default settings (19 and 21 defaults)
+irus_data %>%
+filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+filter(Setpoint != 19)
+
+#Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% 
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28")) %>% group_by(site_room) %>% summarise(
+    avg_setpoint_after = mean(Setpoint)), by = "site_room")
+
+irus_data <- irus_data %>% mutate (sub19_before = ifelse(Date > as.Date(
+  "2020-01-30") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
+
+irus_data <- irus_data %>% mutate (sub19_after = ifelse(Date > as.Date(
+  "2020-02-14") & Date < as.Date("2020-02-28") & Setpoint <19, Setpoint, NA))
 
 
-#Plot of attitude to likelyPEB
-ggplot (cs) + geom_smooth(mapping = aes(x = thermo_mean, y = likelyPEB_mean))
-ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
-  x = thermo_mean, y = EAI_mean), colour = "red") + geom_point(
-    mapping = aes(x = thermo_mean, y = EAI_mean), colour = "red") + geom_smooth(
-    method = "lm", se = FALSE, mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue") + 
-  geom_point(mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
-  labs(x = "Pro-environmental Attitude to Thermostat", y = "General Environmental Attitude Scale (Mean)") +
-  annotate(geom = "point", x = -1, y = 2.8, colour = "blue", shape = "triangle", size = 3) + 
-  annotate(geom = "text", x = -1, y = 2.8, label = " NEP", hjust = "left", size = 6) +
-  annotate(geom = "point", x = -1, y = 2.5, colour = "red", shape = "circle", size = 3) + 
-  annotate(geom = "text", x = -1, y = 2.5, label = " EAI", hjust = "left", size = 6)
 
-#Normal distribution tests
-#Q-Q plots
-qqnorm(cs$likelyPEB_mean, ylab = "likelyPEB")
-qqline(cs$likelyPEB_mean, ylab = "likelyPEB")
-qqnorm(cs$BSCS_mean, ylab = "BSCS_mean")
-qqline(cs$BSCS_mean, ylab = "BSCS_mean")
-qqnorm(cs$NEP_mean, ylab = "NEP_mean")
-qqline(cs$NEP_mean, ylab = "NEP_mean")
-qqnorm(cs$EAI_mean, ylab = "EAI_mean")
-qqline(cs$EAI_mean, ylab = "EAI_mean")
-qqnorm(cs$likelyPEB_mean, ylab = "thermo_attitude")
-qqline(cs$likelyPEB_mean, ylab = "thermo_attitude")
+#Calculate before and after average thermostat set points EXC. default settings + add to irus_data
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date(  "2020-02-28")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
+
+irus_data <- irus_data %>% mutate (thermo_change = avg_setpoint_after - avg_setpoint_before)
+irus_data <- irus_data %>% mutate (sub19_change = sub19_after - sub19_before)
+irus_data <- irus_data %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
+
+#Calculate number of settings below 19 degrees, before and after 14th Feb (posters date)
+#Add data from irus_data tibble to data-frame 'cs' (questionnaire data)
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
+  "2020-02-14")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_before"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+    name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
+  "2020-02-14"
+)) %>% group_by(site_room) %>% summarise(
+  avg_setpoint_before = mean(Setpoint)
+), by = "site_room")
+
+cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
+  "2020-02-28"
+)) %>% group_by(site_room) %>% summarise(
+  avg_setpoint_after = mean(Setpoint)
+), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date(  "2020-02-28")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
+
+
+#Add change variable
+cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
+cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
+
+
+#END OF DATA CLEAN and SETUP
+
+
+
+
+#STATISTICS
+
+#Calculate Cronbach's Alpha for questionnaire scales
+NEP <- cs %>% select(Q5_1:Q5_15)
+alpha(NEP)
+EAI <- cs %>% select(Q6_1:Q6_24)
+alpha(EAI)
+BSCS <- cs %>% select(Q11_1:Q11_13)
+alpha(BSCS)
+likelyPEB <- cs %>% select(Q7_1:Q7_22)
+alpha(likelyPEB)
+thermo_attitude <- cs %>% select(Q8_1:Q8_9)
+alpha(thermo_attitude)
+moral_ascoop <- cs %>% select(Q9_1:Q9_7)
+alpha(moral_ascoop)
+moral_found <- cs %>% select(Q10_1:Q10_7)
+alpha(moral_found)
+
+#Activist
+cs %>% select(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11) %>% alpha()
+#Pragmatist
+cs %>% select(Q7_12, Q7_13, Q7_14, Q7_15, Q7_16, Q7_17, Q7_18, Q7_19, Q7_20, Q7_21, Q7_22) %>% alpha()
+#Descriptives
+summary(cs$PEB_activist)
+summary(cs$PEB_pragmatist)
+
 
 #Shapiro-Wilk test on all scales
 lapply(cs[132:138], shapiro.test)
 #Results  = PEB_pragmatist = non-normal, PEB_Activist and thermo_mean borderline 
 
-hist(cs$PEB_activist, breaks = 7)
-hist(cs$PEB_pragmatist, breaks = 7)
+
 
 
 #Factor Analysis
@@ -406,20 +408,26 @@ with(cs, cor.test(MFT_mean, PEB_pragmatist))
 #Do the whole thing as one big correlation matrix
 M <- cs %>% select(Q35_1, likelyPEB_mean, PEB_activist, PEB_pragmatist, Q8_1, Q8_4, 
               NEP_mean, EAI_mean, Q8_3, Q8_5, Q8_2, Q8_6, thermo_mean, BSCS_mean,
-              MAC_mean, MFT_mean, thermo_change, sub19_change) %>% cor()
+              MAC_mean, MFT_mean, sub19_change, thermo_change) %>% 
+  cor(use = "pairwise.complete.obs")
 
 corrplot(M, method = "number", type = "lower", order = "AOE")
 
-
 res1 <- cor.mtest(M, conf.level = .95)
 
-corrplot.mixed(M, p.mat = res1$p, insig = "blank", order = "AOE",lower.col = "black", 
-               number.cex = .7, tl.pos = "lt")
+p_values_corr <- as.data.frame(res1$p)
+low_CI_corr <- as.data.frame(res1$lowCI)
+upp_CI_corr <- as.data.frame(res1$uppCI)
 
+corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "lt")
+
+write.table(res1$p, file = "p_values.txt", sep = ",", quote = FALSE, row.names = T)
 
 #Correlation plot of morality scales with thermo attitude
 cs %>% select(MAC_mean, MFT_mean, thermo_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
+
+#REGRESSION MODELLING
 
 #Multiple regression models
 model <- lm (likelyPEB_mean ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
@@ -438,6 +446,56 @@ cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
 cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
 
 #to remove this room: cs %>% filter(Q4 != "L04F")
+
+
+
+#PLOTS
+
+#Plot histogram of EAI_mean per subject
+cs %>% ggplot(aes(x=EAI_mean)) + geom_histogram(binwidth = 0.1)
+
+#Scatter plot of NEP vs EAI
+ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = NEP_mean))
+
+#Smoothed line plots of NEP, EAI and BSCS scales vs likelyPEB
+plot1 <- ggplot(cs) + geom_smooth(mapping = aes(x = EAI_mean, y = likelyPEB_mean))
+plot2 <- ggplot(cs) + geom_smooth(mapping = aes(x = NEP_mean, y = likelyPEB_mean))
+plot3 <-  ggplot(cs, mapping = aes(x = BSCS_mean, y = likelyPEB_mean)) + geom_smooth(
+  ) + geom_point() + geom_smooth(method = "lm", colour = "black", size = 0.5) + ggtitle(
+    "Brief Self-Control Scale comparison to claimed PEB")
+grid.arrange(plot1, plot2, plot3, ncol = 3)
+ggplot(cs) + geom_smooth(mapping = aes(x = thermo_mean, y = EAI_mean))
+
+
+#Plot of attitude to likelyPEB
+ggplot (cs) + geom_smooth(mapping = aes(x = thermo_mean, y = likelyPEB_mean))
+ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
+  x = thermo_mean, y = EAI_mean), colour = "red") + geom_point(
+    mapping = aes(x = thermo_mean, y = EAI_mean), colour = "red") + geom_smooth(
+    method = "lm", se = FALSE, mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue") + 
+  geom_point(mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
+  labs(x = "Pro-environmental Attitude to Thermostat", y = "General Environmental Attitude Scale (Mean)") +
+  annotate(geom = "point", x = -1, y = 2.8, colour = "blue", shape = "triangle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.8, label = " NEP", hjust = "left", size = 6) +
+  annotate(geom = "point", x = -1, y = 2.5, colour = "red", shape = "circle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.5, label = " EAI", hjust = "left", size = 6)
+
+#Normal distribution tests
+#Q-Q plots
+qqnorm(cs$likelyPEB_mean, ylab = "likelyPEB")
+qqline(cs$likelyPEB_mean, ylab = "likelyPEB")
+qqnorm(cs$BSCS_mean, ylab = "BSCS_mean")
+qqline(cs$BSCS_mean, ylab = "BSCS_mean")
+qqnorm(cs$NEP_mean, ylab = "NEP_mean")
+qqline(cs$NEP_mean, ylab = "NEP_mean")
+qqnorm(cs$EAI_mean, ylab = "EAI_mean")
+qqline(cs$EAI_mean, ylab = "EAI_mean")
+qqnorm(cs$likelyPEB_mean, ylab = "thermo_attitude")
+qqline(cs$likelyPEB_mean, ylab = "thermo_attitude")
+
+hist(cs$PEB_activist, breaks = 7)
+hist(cs$PEB_pragmatist, breaks = 7)
+
 
 cs %>% ggplot() + geom_point(mapping = aes(
   x = site_room, y = avg_setpoint_before), colour = "blue") + geom_point(mapping = aes(
@@ -458,7 +516,6 @@ pivot_longer(cs, sub19_before:sub19_after, names_to = "Sub19", values_to = "coun
       axis.text.x = element_text(angle = 90, size = 8))
 
 
-#PLOTS
 
 #Plot of Setpoint
 plotA01A <- irus_data %>% filter(Name == "A01A") %>% ggplot () + geom_point(
@@ -474,3 +531,34 @@ plotA01C <- irus_data %>% filter(Name == "A01C") %>% ggplot () + geom_point(
     mapping = aes(x = date_time, y = Setpoint, colour = "Setpoint"))
 
 grid.arrange(plotA01A, plotA01B, plotA01C, nrow = 3)
+
+#Plot of irus_data before and after intervention
+irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(
+  thermo_change)) %>% ggplot() + geom_point(mapping = aes(x = site_room, y = thermo_change))
+
+irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(
+  thermo_change)) %>% ggplot() + geom_histogram(mapping = aes(thermo_change), binwidth = .5) +
+  geom_vline(xintercept = -0.57, linetype = "dashed") + geom_label(x=-3, y=100, label="Mean change = -0.42")
+
+
+tmat <- irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
+  avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after))
+
+#averages before and after of 
+mean(irus_data$avg_setpoint_before, na.rm = TRUE)
+mean(irus_data$avg_setpoint_after, na.rm = TRUE)
+t.test(tmat$avg_setpoint_after,tmat$avg_setpoint_before,paired=TRUE, na.rm = TRUE)
+
+irus_data$site_room <- as.factor(irus_data$site_room)
+
+#I can't rank this by y-axis size
+irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
+  avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after)) %>% ggplot() +
+  geom_col(mapping = aes(x = site_room, y = (avg_setpoint_after - avg_setpoint_before)))
+
+#List of rooms with greater than 3 degree drop in thermostat setting
+irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
+  avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after), thermo_change = mean(
+  thermo_change)) %>% filter(thermo_change < -3) %>% arrange(thermo_change) %>% print(n = 100)
+
+
