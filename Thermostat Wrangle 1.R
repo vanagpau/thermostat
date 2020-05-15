@@ -7,6 +7,7 @@ library(GPArotation)
 library(RColorBrewer)
 library(lubridate)
 library(vroom)
+library(fasttime)
 
 
 setwd("E:/R files")
@@ -136,12 +137,15 @@ irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
 irus_data$site_room <- gsub('\\s+', '', irus_data$site_room)
 
 #Merge the date and time fields
-irus_data$date_time <- as.POSIXct(paste(irus_data$Date, irus_data$Time))
+irus_data$date_time <- fastPOSIXct(paste(irus_data$Date, irus_data$Time))
+
+#Convert rooms to factors (for graphing)
+irus_data$site_room <- as.factor(irus_data$site_room)
 
 #code to take out all the default settings (19 and 21 defaults)
-irus_data %>%
-filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19)
+# irus_data %>%
+# filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+# filter(Setpoint != 19)
 
 #Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -149,28 +153,29 @@ irus_data <- left_join (irus_data, irus_data %>%
   group_by(site_room) %>% 
   summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
 
-irus_data <- left_join (irus_data, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% group_by(site_room) %>% summarise(
-    avg_setpoint_after = mean(Setpoint)), by = "site_room")
+irus_data <- left_join (irus_data, irus_data %>%
+ filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_after = mean(Setpoint)), by = "site_room")
 
 irus_data <- irus_data %>% mutate (sub19_before = ifelse(Date > as.Date(
   "2020-01-30") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
 
 irus_data <- irus_data %>% mutate (sub19_after = ifelse(Date > as.Date(
-  "2020-02-14") & Date < as.Date("2020-02-28") & Setpoint <19, Setpoint, NA))
+  "2020-02-14") & Date < as.Date("2020-03-01") & Setpoint <19, Setpoint, NA))
 
 
 
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
   filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
 
 irus_data <- left_join (irus_data, irus_data %>% 
   filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date(  "2020-02-28")) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
@@ -186,7 +191,7 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < a
     name = "sub19_before"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
 
 cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
+  "2020-03-01")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
 
 cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
@@ -196,20 +201,20 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < a
 ), by = "site_room")
 
 cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-02-28"
+  "2020-03-01"
 )) %>% group_by(site_room) %>% summarise(
   avg_setpoint_after = mean(Setpoint)
 ), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
   filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
   filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date(  "2020-02-28")) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
@@ -217,9 +222,13 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date(
 #Add change variable
 cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
-
+cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
 
 #END OF DATA CLEAN and SETUP
+
+
+
+
 
 
 
@@ -253,8 +262,6 @@ summary(cs$PEB_pragmatist)
 
 #Shapiro-Wilk test on all scales
 lapply(cs[132:138], shapiro.test)
-#Results  = PEB_pragmatist = non-normal, PEB_Activist and thermo_mean borderline 
-
 
 
 
@@ -427,6 +434,63 @@ write.table(res1$p, file = "p_values.txt", sep = ",", quote = FALSE, row.names =
 cs %>% select(MAC_mean, MFT_mean, thermo_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
 
+#Paired T-tests for before and after thermostat set temp
+
+#averages of thermo setting before and after INC defaults
+mean(irus_data$avg_setpoint_before, na.rm = TRUE)
+mean(irus_data$avg_setpoint_after, na.rm = TRUE)
+t_inc <- irus_data %>% group_by(site_room) %>% summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after)) 
+t.test(t_inc$after,t_inc$before,paired=TRUE, na.rm = TRUE)
+
+#averages of thermo setting before and after EXC defaults
+mean(irus_data$avg_sp_before_excdflt, na.rm = TRUE)
+mean(irus_data$avg_sp_after_excdflt, na.rm = TRUE)
+t_exc <- irus_data %>% group_by(site_room) %>% summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
+t.test(t_exc$after,t_exc$before,paired=TRUE, na.rm = TRUE)
+
+#For each room filter to include only those which include defaults 19 and 21
+#Sort by proportion of observations which are default (low propn = high interaction)
+irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
+    Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>% 
+  filter(Setpoint == 19 | Setpoint == 21) %>%
+  group_by(site_room) %>% 
+  summarise(propn = length(Setpoint)/672*100) %>%
+  arrange(., desc(propn)) %>%
+  ggplot () + geom_histogram(aes(x = propn), binwidth = 5) + 
+  labs(title = "Level of deference to default settings by room", x =
+            "Proportion of observations at default", y = "Number of rooms")
+
+#Plot of %age of observations at default by room
+
+irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
+    Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>% 
+  group_by(site_room) %>% 
+  summarise(default = sum(Setpoint == 19 | Setpoint == 21), adjusted = sum(
+    Setpoint != 19 & Setpoint != 21), total = sum(Setpoint > 0),
+    'Below 19' = sum(Setpoint < 19), 'Above 19' = sum(Setpoint > 19)) %>%
+  pivot_longer(., 'Below 19':'Above 19', names_to = "Setting", values_to = "Count") %>%
+  mutate(propn = default / total) %>%
+  mutate(site_room = fct_reorder(site_room, propn)) %>%
+  ggplot () + geom_point(aes(x = site_room, y = propn), size = 0.75) + labs(
+    title = "Thermostat settings 30th Jan 2020 - 1st March", 
+    y = "Proportion of observations at default") +
+  geom_point(aes(x = site_room, y = Count/total, colour = Setting), size  = 0.75) +
+  scale_colour_manual(values=c("firebrick2", "royalblue3")) + theme(
+    axis.text.x = element_blank()) + xlab("Individual rooms") +
+  labs(subtitle = "Overall proportion of settings at default, split by set level")
+
+
+
+
+#Number of observations in the analysis date range NOT default = 98,526
+irus_data %>% filter(Setpoint != 19 & Setpoint != 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
++     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
+
+#Number of observations in the analysis date range = default = 268,526
+irus_data %>% filter(Setpoint == 19 | Setpoint == 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
++     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
+
+
 #REGRESSION MODELLING
 
 #Multiple regression models
@@ -446,6 +510,10 @@ cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
 cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
 
 #to remove this room: cs %>% filter(Q4 != "L04F")
+
+
+
+
 
 
 
@@ -502,7 +570,25 @@ cs %>% ggplot() + geom_point(mapping = aes(
     x = site_room, y = avg_setpoint_after), colour = "red") + theme(
       axis.text.x = element_text(angle = 90, size = 8))
 
-#Scatter plot of mean temp before and after posters
+plotA01A <- irus_data %>% filter(Name == "A01A") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint))
+plotA01B <- irus_data %>% filter(Name == "A01B") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint))
+plotA01C <- irus_data %>% filter(Name == "A01C") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint)) + ggtitle("Room A01C thermostat settings 30th Jan 2020 - 28th Feb 2020")
+plotA01C
+plotA01D <- irus_data %>% filter(Name == "A01D") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint))
+plotA01E <- irus_data %>% filter(Name == "A01E") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint))
+plotA01F <- irus_data %>% filter(Name == "A01F") %>% ggplot () + ylim(16,24) + geom_point(
+    mapping = aes(x = date_time, y = Setpoint))
+
+grid.arrange(plotA01A, plotA01B, plotA01C, plotA01D, plotA01E, plotA01F, nrow = 3)
+
+
+
+#Scatter plot of temp change before and after posters
 cs %>% ggplot() + geom_point(mapping = aes(x = site_room, y = thermo_change),
   colour=ifelse((cs$thermo_change>0), "red", "green"), size = 4) + theme(
     axis.text.x = element_text(angle = 90, size = 8))
@@ -517,7 +603,7 @@ pivot_longer(cs, sub19_before:sub19_after, names_to = "Sub19", values_to = "coun
 
 
 
-#Plot of Setpoint
+#Plot of Setpoint and Air Temp
 plotA01A <- irus_data %>% filter(Name == "A01A") %>% ggplot () + geom_point(
   mapping = aes(x = date_time, y = `Temp Air`, colour = "Air")) + ylim(16,24) + geom_point(
     mapping = aes(x = date_time, y = Setpoint, colour = "Setpoint"))
@@ -541,24 +627,18 @@ irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(
   geom_vline(xintercept = -0.57, linetype = "dashed") + geom_label(x=-3, y=100, label="Mean change = -0.42")
 
 
-tmat <- irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
-  avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after))
-
-#averages before and after of 
-mean(irus_data$avg_setpoint_before, na.rm = TRUE)
-mean(irus_data$avg_setpoint_after, na.rm = TRUE)
-t.test(tmat$avg_setpoint_after,tmat$avg_setpoint_before,paired=TRUE, na.rm = TRUE)
-
-irus_data$site_room <- as.factor(irus_data$site_room)
 
 #I can't rank this by y-axis size
-irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
-  avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after)) %>% ggplot() +
-  geom_col(mapping = aes(x = site_room, y = (avg_setpoint_after - avg_setpoint_before)))
+irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(thermo_change)) %>%
+  mutate(site_room = fct_reorder(site_room, thermo_change)) %>% 
+ ggplot() + geom_col(mapping = aes(x = site_room, y = thermo_change))
 
 #List of rooms with greater than 3 degree drop in thermostat setting
 irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
   avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after), thermo_change = mean(
   thermo_change)) %>% filter(thermo_change < -3) %>% arrange(thermo_change) %>% print(n = 100)
 
+
+
+#WORKSPACE
 
