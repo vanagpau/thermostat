@@ -94,6 +94,15 @@ EAI_mean = mean(c(
 #Create EAI sub-scales data frame
 EAI_subscales <- cs %>% select(EAI1:EAI12)
 
+#Create scales
+NEP <- cs %>% select(Q5_1:Q5_15)
+EAI <- cs %>% select(Q6_1:Q6_24)
+BSCS <- cs %>% select(Q11_1:Q11_13)
+likelyPEB <- cs %>% select(Q7_1:Q7_22)
+thermo_moral <- cs %>% select(Q8_7:Q8_9)
+moral_ascoop <- cs %>% select(Q9_1:Q9_7)
+moral_found <- cs %>% select(Q10_1:Q10_7)
+
 #Create Activist and Pragmatist variables from likely PEB scale
 cs <- cs %>% rowwise() %>% mutate(
   PEB_activist = mean(c(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11), na.rm = TRUE))
@@ -106,9 +115,18 @@ cs <- cs %>% rowwise() %>% mutate(
 cs <- cbind(cs, NEP_mean = rowMeans(NEP, na.rm = TRUE))
 cs <- cbind(cs, likelyPEB_mean = rowMeans(likelyPEB, na.rm = TRUE))
 cs <- cbind(cs, BSCS_mean = rowMeans(BSCS, na.rm = TRUE))
-cs <- cbind(cs, thermo_mean = rowMeans(thermo_attitude, na.rm = TRUE))
+cs <- cbind(cs, thermo_moral_mean = rowMeans(thermo_moral, na.rm = TRUE))
 cs <- cbind(cs, MAC_mean = rowMeans(moral_ascoop, na.rm = TRUE))
 cs <- cbind(cs, MFT_mean = rowMeans(moral_found, na.rm = TRUE))
+
+#Rename column names to descriptives: cs %>% rename(new = old)
+cs <- cs %>% rename('Political orientation' = Q35_1)
+cs <- cs %>% rename('Habit' = Q8_2)
+cs <- cs %>% rename('Social norm' = Q8_3)
+cs <- cs %>% rename('PBC' = Q8_5)
+cs <- cs %>% rename('Awareness consequences' = Q8_1)
+cs <- cs %>% rename('Intention' = Q8_6)
+cs <- cs %>% rename('Ascription responsibility' = Q8_4)
 
 
 #LOAD IN THE THERMOSTAT DATA
@@ -236,19 +254,13 @@ cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_befor
 #STATISTICS
 
 #Calculate Cronbach's Alpha for questionnaire scales
-NEP <- cs %>% select(Q5_1:Q5_15)
+
 alpha(NEP)
-EAI <- cs %>% select(Q6_1:Q6_24)
 alpha(EAI)
-BSCS <- cs %>% select(Q11_1:Q11_13)
 alpha(BSCS)
-likelyPEB <- cs %>% select(Q7_1:Q7_22)
 alpha(likelyPEB)
-thermo_attitude <- cs %>% select(Q8_1:Q8_9)
-alpha(thermo_attitude)
-moral_ascoop <- cs %>% select(Q9_1:Q9_7)
+alpha(thermo_moral)
 alpha(moral_ascoop)
-moral_found <- cs %>% select(Q10_1:Q10_7)
 alpha(moral_found)
 
 #Activist
@@ -268,7 +280,7 @@ lapply(cs[132:138], shapiro.test)
 #Factor Analysis
 
 #FA of Attitudes scale
-cs %>% select(Q8_1:Q8_9) %>% cor() %>% fa.parallel(
+cs %>% select('Awareness consequences':Q8_9) %>% cor() %>% fa.parallel(
   n.obs=88, main = "Parallel Analysis scree plot - Attitude scale")
 
 #FA of likely PEB scale
@@ -313,41 +325,41 @@ cs %>% select(Q11_1:Q11_13) %>% cor(
 #Correlations EAI vs NEP
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
 with(cs, cor.test(EAI_mean, likelyPEB_mean))
-with(cs, cor.test(NEP_mean, thermo_mean))
-with(cs, cor.test(EAI_mean, thermo_mean))
+with(cs, cor.test(NEP_mean, thermo_moral_mean))
+with(cs, cor.test(EAI_mean, thermo_moral_mean))
 
 #Significance test of EAI vs NEP correlations vs likelyPEB
 r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
   with(cs, cor(NEP_mean, likelyPEB_mean))), n2=88)
 
 #Significance test of EAI vs NEP correlations vs attitudes
-r.test(r12=(with(cs, cor(EAI_mean, thermo_mean))), n=88, r34=(
-  with(cs, cor(NEP_mean, thermo_mean))), n2=88)
+r.test(r12=(with(cs, cor(EAI_mean, thermo_moral_mean))), n=88, r34=(
+  with(cs, cor(NEP_mean, thermo_moral_mean))), n2=88)
 
 #Correlations and significance compared to CADM
 
 #Correlation of political orientation w. likely_PEB & thermo_change
-with(cs, cor.test(Q35_1, likelyPEB_mean))
-with(cs, cor.test(Q35_1, PEB_activist))
-with(cs, cor.test(Q35_1, PEB_pragmatist))
-with(cs, cor.test(Q35_1, thermo_change))
-with(cs, cor.test(Q35_1, sub19_change))
+with(cs, cor.test('Political orientation', likelyPEB_mean))
+with(cs, cor.test('Political orientation', PEB_activist))
+with(cs, cor.test('Political orientation', PEB_pragmatist))
+with(cs, cor.test('Political orientation', thermo_change))
+with(cs, cor.test('Political orientation', sub19_change))
 
 #Correlation Awareness of Consequences w. likely PEB
-with(cs, cor.test(Q8_1, likelyPEB_mean))
-with(cs, cor.test(Q8_1, PEB_activist))
-with(cs, cor.test(Q8_1, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_1, likelyPEB_mean))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor(Q8_1, PEB_activist))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor(Q8_1, PEB_pragmatist))), n2 = 13215, r34 = .22)
+with(cs, cor.test('Awareness consequences', likelyPEB_mean))
+with(cs, cor.test('Awareness consequences', PEB_activist))
+with(cs, cor.test('Awareness consequences', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', PEB_activist))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
 
 #Correlation Ascription of Responsibility w. likely PEB
-with(cs, cor.test(Q8_4, likelyPEB_mean))
-with(cs, cor.test(Q8_4, PEB_activist))
-with(cs, cor.test(Q8_4, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_4, likelyPEB_mean))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor(Q8_4, PEB_activist))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor(Q8_4, PEB_pragmatist))), n2 = 4217, r34 = .10)
+with(cs, cor.test('Ascription responsibility', likelyPEB_mean))
+with(cs, cor.test('Ascription responsibility', PEB_activist))
+with(cs, cor.test('Ascription responsibility', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', PEB_activist))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
 
 #Correlation NEP w. likely PEB
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
@@ -358,44 +370,44 @@ r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
 
 #Correlation Social Norm w. likely PEB
-with(cs, cor.test(Q8_3, likelyPEB_mean))
-with(cs, cor.test(Q8_3, PEB_activist))
-with(cs, cor.test(Q8_3, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_3, likelyPEB_mean))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor(Q8_3, PEB_activist))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor(Q8_3, PEB_pragmatist))), n2 = 14170, r34 = .24)
+with(cs, cor.test('Social norm', likelyPEB_mean))
+with(cs, cor.test('Social norm', PEB_activist))
+with(cs, cor.test('Social norm', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('Social norm', likelyPEB_mean))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor('Social norm', PEB_activist))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor('Social norm', PEB_pragmatist))), n2 = 14170, r34 = .24)
 
 #Correlation Perceived Behavioural Control w. likely PEB
-with(cs, cor.test(Q8_5, likelyPEB_mean))
-with(cs, cor.test(Q8_5, PEB_activist))
-with(cs, cor.test(Q8_5, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_5, likelyPEB_mean))), n2 = 15020, r34 = .40)
-r.test(n = 88, r12 = (with(cs, cor(Q8_5, PEB_activist))), n2 = 15020, r34 = .40)
-r.test(n = 88, r12 = (with(cs, cor(Q8_5, PEB_pragmatist))), n2 = 15020, r34 = .40)
+with(cs, cor.test('PBC', likelyPEB_mean))
+with(cs, cor.test('PBC', PEB_activist))
+with(cs, cor.test('PBC', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('PBC', likelyPEB_mean))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor('PBC', PEB_activist))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor('PBC', PEB_pragmatist))), n2 = 15020, r34 = .40)
 
 #Correlation Habits w. likely PEB
-with(cs, cor.test(Q8_2, likelyPEB_mean))
-with(cs, cor.test(Q8_2, PEB_activist))
-with(cs, cor.test(Q8_2, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_2, likelyPEB_mean))), n2 = 7747, r34 = .46)
-r.test(n = 88, r12 = (with(cs, cor(Q8_2, PEB_activist))), n2 = 7747, r34 = .46)
-r.test(n = 88, r12 = (with(cs, cor(Q8_2, PEB_pragmatist))), n2 = 7747, r34 = .46)
+with(cs, cor.test('Habit', likelyPEB_mean))
+with(cs, cor.test('Habit', PEB_activist))
+with(cs, cor.test('Habit', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('Habit', likelyPEB_mean))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor('Habit', PEB_activist))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor('Habit', PEB_pragmatist))), n2 = 7747, r34 = .46)
 
 #Correlation Intentions w. likely PEB
-with(cs, cor.test(Q8_6, likelyPEB_mean))
-with(cs, cor.test(Q8_6, PEB_activist))
-with(cs, cor.test(Q8_6, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(Q8_6, likelyPEB_mean))), n2 = 12945, r34 = .55)
-r.test(n = 88, r12 = (with(cs, cor(Q8_6, PEB_activist))), n2 = 12945, r34 = .55)
-r.test(n = 88, r12 = (with(cs, cor(Q8_6, PEB_pragmatist))), n2 = 12945, r34 = .55)
+with(cs, cor.test('Intention', likelyPEB_mean))
+with(cs, cor.test('Intention', PEB_activist))
+with(cs, cor.test('Intention', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor('Intention', likelyPEB_mean))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor('Intention', PEB_activist))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor('Intention', PEB_pragmatist))), n2 = 12945, r34 = .55)
 
 #Correlation Attitudes w. likely PEB
-with(cs, cor.test(thermo_mean, likelyPEB_mean))
-with(cs, cor.test(thermo_mean, PEB_activist))
-with(cs, cor.test(thermo_mean, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(thermo_mean, likelyPEB_mean))), n2 = 14053, r34 = .36)
-r.test(n = 88, r12 = (with(cs, cor(thermo_mean, PEB_activist))), n2 = 14053, r34 = .36)
-r.test(n = 88, r12 = (with(cs, cor(thermo_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
+with(cs, cor.test(thermo_moral_mean, likelyPEB_mean))
+with(cs, cor.test(thermo_moral_mean, PEB_activist))
+with(cs, cor.test(thermo_moral_mean, PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, likelyPEB_mean))), n2 = 14053, r34 = .36)
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_activist))), n2 = 14053, r34 = .36)
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
 
 #Correlation BSCS with likelyPEB
 with(cs, cor.test(BSCS_mean, likelyPEB_mean))
@@ -413,9 +425,10 @@ with(cs, cor.test(MFT_mean, PEB_activist))
 with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
 #Do the whole thing as one big correlation matrix
-M <- cs %>% select(Q35_1, likelyPEB_mean, PEB_activist, PEB_pragmatist, Q8_1, Q8_4, 
-              NEP_mean, EAI_mean, Q8_3, Q8_5, Q8_2, Q8_6, thermo_mean, BSCS_mean,
-              MAC_mean, MFT_mean, sub19_change, thermo_change) %>% 
+
+M <- cs %>% select('Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'Awareness consequences', 'Ascription responsibility', 
+              NEP_mean, EAI_mean, 'Social norm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+              MAC_mean, MFT_mean, thermo_change_excdflt) %>% 
   cor(use = "pairwise.complete.obs")
 
 corrplot(M, method = "number", type = "lower", order = "AOE")
@@ -430,8 +443,29 @@ corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "
 
 write.table(res1$p, file = "p_values.txt", sep = ",", quote = FALSE, row.names = T)
 
+#Correlations with Actual PEB
+
+with(cs, cor.test(cs$'Political orientation', thermo_change_excdflt))
+with(cs, cor.test(cs$'Awareness consequences', thermo_change_excdflt))
+with(cs, cor.test(cs$'Ascription responsibility', thermo_change_excdflt))
+with(cs, cor.test(NEP_mean, thermo_change_excdflt))
+with(cs, cor.test(EAI_mean, thermo_change_excdflt))
+with(cs, cor.test(cs$'Social norm', thermo_change_excdflt))
+with(cs, cor.test(cs$'PBC', thermo_change_excdflt))
+with(cs, cor.test(cs$'Habit', thermo_change_excdflt))
+with(cs, cor.test(cs$'Intention', thermo_change_excdflt))
+with(cs, cor.test(cs$thermo_moral_mean, thermo_change_excdflt))
+with(cs, cor.test(BSCS_mean, thermo_change_excdflt))
+with(cs, cor.test(MAC_mean, thermo_change_excdflt))
+with(cs, cor.test(MFT_mean, thermo_change_excdflt))
+
+
+
+
+
+
 #Correlation plot of morality scales with thermo attitude
-cs %>% select(MAC_mean, MFT_mean, thermo_mean, likelyPEB_mean) %>% cor(
+cs %>% select(MAC_mean, MFT_mean, thermo_moral_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
 
 #Paired T-tests for before and after thermostat set temp
@@ -450,6 +484,7 @@ t.test(t_exc$after,t_exc$before,paired=TRUE, na.rm = TRUE)
 
 #For each room filter to include only those which include defaults 19 and 21
 #Sort by proportion of observations which are default (low propn = high interaction)
+
 irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>% 
   filter(Setpoint == 19 | Setpoint == 21) %>%
@@ -467,17 +502,17 @@ irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-1
   group_by(site_room) %>% 
   summarise(default = sum(Setpoint == 19 | Setpoint == 21), adjusted = sum(
     Setpoint != 19 & Setpoint != 21), total = sum(Setpoint > 0),
-    'Below 19' = sum(Setpoint < 19), 'Above 19' = sum(Setpoint > 19)) %>%
+    'Below 19' = sum(Setpoint < 19 & Setpoint != 21), 'Above 19' = sum(Setpoint > 19  & Setpoint != 21)) %>%
   pivot_longer(., 'Below 19':'Above 19', names_to = "Setting", values_to = "Count") %>%
   mutate(propn = default / total) %>%
   mutate(site_room = fct_reorder(site_room, propn)) %>%
   ggplot () + geom_point(aes(x = site_room, y = propn), size = 0.75) + labs(
     title = "Thermostat settings 30th Jan 2020 - 1st March", 
     y = "Proportion of observations at default") +
-  geom_point(aes(x = site_room, y = Count/total, colour = Setting), size  = 0.75) +
+  geom_point(aes(x = site_room, y = Count/total, colour = Setting), size  = 2, alpha = 1/2) +
   scale_colour_manual(values=c("firebrick2", "royalblue3")) + theme(
-    axis.text.x = element_blank()) + xlab("Individual rooms") +
-  labs(subtitle = "Overall proportion of settings at default, split by set level")
+    axis.text.x = element_blank(), axis.ticks.x=element_blank()) + xlab("Individual rooms") +
+  labs(subtitle = "Overall proportion of settings at default, split by set level") 
 
 
 
@@ -494,13 +529,13 @@ irus_data %>% filter(Setpoint == 19 | Setpoint == 21) %>% filter((Date > as.Date
 #REGRESSION MODELLING
 
 #Multiple regression models
-model <- lm (likelyPEB_mean ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+model <- lm (likelyPEB_mean ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
                NEP_mean + EAI_mean, data = cs)
 summary(model)
-model_activist <- lm (PEB_activist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+model_activist <- lm (PEB_activist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
                NEP_mean + EAI_mean, data = cs)
 summary(model_activist)
-model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_mean + 
+model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
                NEP_mean + EAI_mean, data = cs)
 summary(model_pragmatist)
 
@@ -532,16 +567,16 @@ plot3 <-  ggplot(cs, mapping = aes(x = BSCS_mean, y = likelyPEB_mean)) + geom_sm
   ) + geom_point() + geom_smooth(method = "lm", colour = "black", size = 0.5) + ggtitle(
     "Brief Self-Control Scale comparison to claimed PEB")
 grid.arrange(plot1, plot2, plot3, ncol = 3)
-ggplot(cs) + geom_smooth(mapping = aes(x = thermo_mean, y = EAI_mean))
+ggplot(cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = EAI_mean))
 
 
 #Plot of attitude to likelyPEB
-ggplot (cs) + geom_smooth(mapping = aes(x = thermo_mean, y = likelyPEB_mean))
+ggplot (cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = likelyPEB_mean))
 ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
-  x = thermo_mean, y = EAI_mean), colour = "red") + geom_point(
-    mapping = aes(x = thermo_mean, y = EAI_mean), colour = "red") + geom_smooth(
-    method = "lm", se = FALSE, mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue") + 
-  geom_point(mapping = aes(x = thermo_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
+  x = thermo_moral_mean, y = EAI_mean), colour = "red") + geom_point(
+    mapping = aes(x = thermo_moral_mean, y = EAI_mean), colour = "red") + geom_smooth(
+    method = "lm", se = FALSE, mapping = aes(x = thermo_moral_mean, y = NEP_mean), colour = "blue") + 
+  geom_point(mapping = aes(x = thermo_moral_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
   labs(x = "Pro-environmental Attitude to Thermostat", y = "General Environmental Attitude Scale (Mean)") +
   annotate(geom = "point", x = -1, y = 2.8, colour = "blue", shape = "triangle", size = 3) + 
   annotate(geom = "text", x = -1, y = 2.8, label = " NEP", hjust = "left", size = 6) +
@@ -558,8 +593,8 @@ qqnorm(cs$NEP_mean, ylab = "NEP_mean")
 qqline(cs$NEP_mean, ylab = "NEP_mean")
 qqnorm(cs$EAI_mean, ylab = "EAI_mean")
 qqline(cs$EAI_mean, ylab = "EAI_mean")
-qqnorm(cs$likelyPEB_mean, ylab = "thermo_attitude")
-qqline(cs$likelyPEB_mean, ylab = "thermo_attitude")
+qqnorm(cs$likelyPEB_mean, ylab = "thermo_moral")
+qqline(cs$likelyPEB_mean, ylab = "thermo_moral")
 
 hist(cs$PEB_activist, breaks = 7)
 hist(cs$PEB_pragmatist, breaks = 7)
