@@ -162,12 +162,12 @@ irus_data$site_room <- as.factor(irus_data$site_room)
 
 #code to take out all the default settings (19 and 21 defaults)
 # irus_data %>%
-# filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+# filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
 # filter(Setpoint != 19)
 
 #Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
-  filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% 
+  filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% 
   group_by(site_room) %>% 
   summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
 
@@ -186,14 +186,14 @@ irus_data <- irus_data %>% mutate (sub19_after = ifelse(Date > as.Date(
 
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
-  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
 
 irus_data <- left_join (irus_data, irus_data %>% 
-  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date("2020-03-01")) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
@@ -225,14 +225,14 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < a
 ), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
-  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
-  filter(Setpoint != 21 & hour(date_time) >= 7 & hour(date_time) <= 10) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-14") & Date < as.Date("2020-03-01")) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
@@ -332,34 +332,36 @@ with(cs, cor.test(EAI_mean, thermo_moral_mean))
 r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
   with(cs, cor(NEP_mean, likelyPEB_mean))), n2=88)
 
-#Significance test of EAI vs NEP correlations vs attitudes
-r.test(r12=(with(cs, cor(EAI_mean, thermo_moral_mean))), n=88, r34=(
-  with(cs, cor(NEP_mean, thermo_moral_mean))), n2=88)
+#Significance test of EAI vs NEP correlations vs actual thermostat control
+r.test(r12=(with(cs, cor(EAI_mean, thermo_change_excdflt))), n=88, r34=(
+  with(cs, cor(NEP_mean, thermo_change_excdflt))), n2=88)
+
+
 
 #Correlations and significance compared to CADM
 
 #Correlation of political orientation w. likely_PEB & thermo_change
-with(cs, cor.test('Political orientation', likelyPEB_mean))
-with(cs, cor.test('Political orientation', PEB_activist))
-with(cs, cor.test('Political orientation', PEB_pragmatist))
-with(cs, cor.test('Political orientation', thermo_change))
-with(cs, cor.test('Political orientation', sub19_change))
+with(cs, cor.test(cs$'Political orientation', likelyPEB_mean))
+with(cs, cor.test(cs$'Political orientation', PEB_activist))
+with(cs, cor.test(cs$'Political orientation', PEB_pragmatist))
+with(cs, cor.test(cs$'Political orientation', thermo_change))
+with(cs, cor.test(cs$'Political orientation', sub19_change))
 
 #Correlation Awareness of Consequences w. likely PEB
-with(cs, cor.test('Awareness consequences', likelyPEB_mean))
-with(cs, cor.test('Awareness consequences', PEB_activist))
-with(cs, cor.test('Awareness consequences', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', PEB_activist))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor('Awareness consequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
+with(cs, cor.test(cs$'Awareness consequences', likelyPEB_mean))
+with(cs, cor.test(cs$'Awareness consequences', PEB_activist))
+with(cs, cor.test(cs$'Awareness consequences', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', PEB_activist))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
 
 #Correlation Ascription of Responsibility w. likely PEB
-with(cs, cor.test('Ascription responsibility', likelyPEB_mean))
-with(cs, cor.test('Ascription responsibility', PEB_activist))
-with(cs, cor.test('Ascription responsibility', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', PEB_activist))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor('Ascription responsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
+with(cs, cor.test(cs$'Ascription responsibility', likelyPEB_mean))
+with(cs, cor.test(cs$'Ascription responsibility', PEB_activist))
+with(cs, cor.test(cs$'Ascription responsibility', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', PEB_activist))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
 
 #Correlation NEP w. likely PEB
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
@@ -370,36 +372,36 @@ r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
 
 #Correlation Social Norm w. likely PEB
-with(cs, cor.test('Social norm', likelyPEB_mean))
-with(cs, cor.test('Social norm', PEB_activist))
-with(cs, cor.test('Social norm', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('Social norm', likelyPEB_mean))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor('Social norm', PEB_activist))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor('Social norm', PEB_pragmatist))), n2 = 14170, r34 = .24)
+with(cs, cor.test(cs$'Social norm', likelyPEB_mean))
+with(cs, cor.test(cs$'Social norm', PEB_activist))
+with(cs, cor.test(cs$'Social norm', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', likelyPEB_mean))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', PEB_activist))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', PEB_pragmatist))), n2 = 14170, r34 = .24)
 
 #Correlation Perceived Behavioural Control w. likely PEB
-with(cs, cor.test('PBC', likelyPEB_mean))
-with(cs, cor.test('PBC', PEB_activist))
-with(cs, cor.test('PBC', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('PBC', likelyPEB_mean))), n2 = 15020, r34 = .40)
-r.test(n = 88, r12 = (with(cs, cor('PBC', PEB_activist))), n2 = 15020, r34 = .40)
-r.test(n = 88, r12 = (with(cs, cor('PBC', PEB_pragmatist))), n2 = 15020, r34 = .40)
+with(cs, cor.test(cs$'PBC', likelyPEB_mean))
+with(cs, cor.test(cs$'PBC', PEB_activist))
+with(cs, cor.test(cs$'PBC', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', likelyPEB_mean))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_activist))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_pragmatist))), n2 = 15020, r34 = .40)
 
 #Correlation Habits w. likely PEB
-with(cs, cor.test('Habit', likelyPEB_mean))
-with(cs, cor.test('Habit', PEB_activist))
-with(cs, cor.test('Habit', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('Habit', likelyPEB_mean))), n2 = 7747, r34 = .46)
-r.test(n = 88, r12 = (with(cs, cor('Habit', PEB_activist))), n2 = 7747, r34 = .46)
-r.test(n = 88, r12 = (with(cs, cor('Habit', PEB_pragmatist))), n2 = 7747, r34 = .46)
+with(cs, cor.test(cs$'Habit', likelyPEB_mean))
+with(cs, cor.test(cs$'Habit', PEB_activist))
+with(cs, cor.test(cs$'Habit', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', likelyPEB_mean))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_activist))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_pragmatist))), n2 = 7747, r34 = .46)
 
 #Correlation Intentions w. likely PEB
-with(cs, cor.test('Intention', likelyPEB_mean))
-with(cs, cor.test('Intention', PEB_activist))
-with(cs, cor.test('Intention', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor('Intention', likelyPEB_mean))), n2 = 12945, r34 = .55)
-r.test(n = 88, r12 = (with(cs, cor('Intention', PEB_activist))), n2 = 12945, r34 = .55)
-r.test(n = 88, r12 = (with(cs, cor('Intention', PEB_pragmatist))), n2 = 12945, r34 = .55)
+with(cs, cor.test(cs$'Intention', likelyPEB_mean))
+with(cs, cor.test(cs$'Intention', PEB_activist))
+with(cs, cor.test(cs$'Intention', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', likelyPEB_mean))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_activist))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_pragmatist))), n2 = 12945, r34 = .55)
 
 #Correlation Attitudes w. likely PEB
 with(cs, cor.test(thermo_moral_mean, likelyPEB_mean))
@@ -413,7 +415,6 @@ r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 14
 with(cs, cor.test(BSCS_mean, likelyPEB_mean))
 with(cs, cor.test(BSCS_mean, PEB_activist))
 with(cs, cor.test(BSCS_mean, PEB_pragmatist))
-
 
 #Correlation MAC w. likely PEB
 with(cs, cor.test(MAC_mean, likelyPEB_mean))
@@ -479,8 +480,9 @@ t.test(t_inc$after,t_inc$before,paired=TRUE, na.rm = TRUE)
 #averages of thermo setting before and after EXC defaults
 mean(irus_data$avg_sp_before_excdflt, na.rm = TRUE)
 mean(irus_data$avg_sp_after_excdflt, na.rm = TRUE)
-t_exc <- irus_data %>% group_by(site_room) %>% summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
-t.test(t_exc$after,t_exc$before,paired=TRUE, na.rm = TRUE)
+t_exc <- irus_data %>% group_by(site_room) %>%
+  summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
+t.test(t_exc$after,t_exc$before, paired=TRUE)
 
 #For each room filter to include only those which include defaults 19 and 21
 #Sort by proportion of observations which are default (low propn = high interaction)
@@ -517,13 +519,58 @@ irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-1
 
 
 
-#Number of observations in the analysis date range NOT default = 98,526
-irus_data %>% filter(Setpoint != 19 & Setpoint != 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
-+     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
+#Number of observations in the analysis date range NOT default = 110,581
+irus_data %>%   
+  filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
+     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+  filter(Setpoint != 19)
 
-#Number of observations in the analysis date range = default = 268,526
+#Number of observations in the analysis date range @ default = 268,526
 irus_data %>% filter(Setpoint == 19 | Setpoint == 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
 +     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
+#Out of 368k = 73% @ default setting
+irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
++     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
+
+#Hypothesis 5: Differences between Halls
+
+cs %>% filter(Q3 == "CRESCENT") %>%
+  summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt))
+cs %>% filter(Q3 == "CRESCENT") %>%
+  summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after))
+cs %>% filter(Q3 == "WARNEFORD") %>%
+  summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt))
+cs %>% filter(Q3 == "WARNEFORD") %>%
+  summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after))
+
+t_warneford <-  cs %>% filter(Q3 == "WARNEFORD") %>%
+  select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, avg_sp_after_excdflt)
+t_crescent <-  cs %>% filter(Q3 == "CRESCENT") %>%
+  select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, avg_sp_after_excdflt)
+
+t.test(x = t_warneford$avg_setpoint_after, y = t_warneford$avg_setpoint_before, alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_crescent$avg_setpoint_after, y = t_crescent$avg_setpoint_before, alternative = "l", mu = 0, paired = TRUE)
+
+t.test(x = t_warneford$avg_sp_after_excdflt, y = t_warneford$avg_sp_before_excdflt, alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_crescent$avg_sp_after_excdflt, y = t_crescent$avg_sp_after_excdflt, alternative = "l", mu = 0, paired = TRUE)
+
+
+#Plot I haven't finished yet
+cs %>% group_by(Q3) %>%
+  summarise(before_dflt = mean(avg_setpoint_before), after_dflt = mean(
+    avg_setpoint_after), before_excdflt = mean(avg_sp_before_excdflt), 
+    after_excdflt = mean(avg_sp_after_excdflt) ) %>% 
+  pivot_longer(., cols = 2:5, names_to = "data", values_to = "setting") %>% 
+  ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = data)) + 
+  theme(axis.text.x= element_text(size = 10, angle = 90))
+
+cs %>% group_by(Q3) %>%
+  select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, 
+         avg_sp_after_excdflt)  %>% 
+  pivot_longer(., cols = 2:5, names_to = "data", values_to = "setting") %>% 
+  ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = data)) + 
+  theme(axis.text.x= element_text(size = 10, angle = 90))
 
 
 #REGRESSION MODELLING
