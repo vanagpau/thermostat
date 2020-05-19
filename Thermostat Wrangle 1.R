@@ -549,28 +549,35 @@ t_warneford <-  cs %>% filter(Q3 == "WARNEFORD") %>%
 t_crescent <-  cs %>% filter(Q3 == "CRESCENT") %>%
   select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, avg_sp_after_excdflt)
 
-t.test(x = t_warneford$avg_setpoint_after, y = t_warneford$avg_setpoint_before, alternative = "l", mu = 0, paired = TRUE)
-t.test(x = t_crescent$avg_setpoint_after, y = t_crescent$avg_setpoint_before, alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_warneford$avg_setpoint_after, y = t_warneford$avg_setpoint_before,
+       alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_crescent$avg_setpoint_after, y = t_crescent$avg_setpoint_before,
+       alternative = "l", mu = 0, paired = TRUE)
 
-t.test(x = t_warneford$avg_sp_after_excdflt, y = t_warneford$avg_sp_before_excdflt, alternative = "l", mu = 0, paired = TRUE)
-t.test(x = t_crescent$avg_sp_after_excdflt, y = t_crescent$avg_sp_after_excdflt, alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_warneford$avg_sp_after_excdflt, y = t_warneford$avg_sp_before_excdflt,
+       alternative = "l", mu = 0, paired = TRUE)
+t.test(x = t_crescent$avg_sp_after_excdflt, y = t_crescent$avg_sp_before_excdflt,
+       alternative = "l", mu = 0, paired = TRUE)
 
 
-#Plot I haven't finished yet
-cs %>% group_by(Q3) %>%
-  summarise(before_dflt = mean(avg_setpoint_before), after_dflt = mean(
-    avg_setpoint_after), before_excdflt = mean(avg_sp_before_excdflt), 
-    after_excdflt = mean(avg_sp_after_excdflt) ) %>% 
-  pivot_longer(., cols = 2:5, names_to = "data", values_to = "setting") %>% 
-  ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = data)) + 
-  theme(axis.text.x= element_text(size = 10, angle = 90))
+#Boxplot of temps before and after by Hall (note: averages are MEDIAN!)
 
-cs %>% group_by(Q3) %>%
-  select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, 
+boxplot1 <- cs %>% group_by(Q3) %>%
+  select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt,
          avg_sp_after_excdflt)  %>% 
-  pivot_longer(., cols = 2:5, names_to = "data", values_to = "setting") %>% 
-  ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = data)) + 
-  theme(axis.text.x= element_text(size = 10, angle = 90))
+  pivot_longer(., cols = 2:5, names_to = "condition", values_to = "setting")
+boxplot1$condition <- as.factor(boxplot$condition) %>% factor(.,
+    levels = c('avg_setpoint_before', 'avg_setpoint_after', 
+               'avg_sp_before_excdflt', 'avg_sp_after_excdflt'), 
+    labels = c('Before - inc defaults', 'After - inc defaults', 
+               'Before - excl defaults', 'After - excl defaults'), ordered = TRUE)
+boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition,)) + 
+  theme(axis.text.x= element_text(size = 15), axis.title.x = element_blank()) +
+  scale_colour_manual(values = c("firebrick2","royalblue3","firebrick3","royalblue3")) +
+  labs(title = "Median/IQR of thermostat settings by experimental condition") +
+  scale_x_discrete(labels=c("CRESCENT" = "FAMILY", "WARNEFORD" = "GENERIC"))
+
+
 
 
 #REGRESSION MODELLING
