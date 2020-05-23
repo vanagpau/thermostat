@@ -462,9 +462,6 @@ with(cs, cor.test(MFT_mean, thermo_change_excdflt))
 
 
 
-
-
-
 #Correlation plot of morality scales with thermo attitude
 cs %>% select(MAC_mean, MFT_mean, thermo_moral_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
@@ -558,6 +555,7 @@ t.test(x = t_warneford$avg_sp_after_excdflt, y = t_warneford$avg_sp_before_excdf
        alternative = "l", mu = 0, paired = TRUE)
 t.test(x = t_crescent$avg_sp_after_excdflt, y = t_crescent$avg_sp_before_excdflt,
        alternative = "l", mu = 0, paired = TRUE)
+
 
 
 #Boxplot of temps before and after by Hall (note: averages are MEDIAN!)
