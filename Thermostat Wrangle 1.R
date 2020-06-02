@@ -9,6 +9,7 @@ library(RColorBrewer)
 library(lubridate)
 library(vroom)
 library(fasttime)
+library(sjPlot)
 
 
 setwd("E:/R files")
@@ -628,22 +629,12 @@ summary(model_H1a_prag)
 form_H1b <- thermo_change_excdflt ~ `Awareness consequences` + `Habit` + `Social norm` + 
   `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
 std_model_H1b <- standardize(form_H1b, cs)
-model_H1b <- lm(std_model_H1b$formula, std_model_H1a$data)
-summary(model_H1b)
-
-
-
-
-
-
-
-#Model H1b
-form_H1b <- thermo_change_excdflt ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
-               NEP_mean + EAI_mean
-std_model_H1b <- standardize(form_H1b, cs)
 model_H1b <- lm(std_model_H1b$formula, std_model_H1b$data)
 summary(model_H1b)
 
+#REGRESSION MODEL TABLES
+#HYPOTHESIS 1
+tab_model(model_H1a, model_H1a_act, model_H1a_prag, model_H1b)
 
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
