@@ -1,6 +1,7 @@
 library(tidyverse)
 library(data.table)
 library(psych)
+library(standardize)
 library(gridExtra)
 library(corrplot)
 library(GPArotation)
@@ -46,6 +47,8 @@ cs[cs$Q3 == "Warneford Hall", "Q3"] <- as.character("WARNEFORD")
 cs$site_room <- paste(cs$Q3, cs$Q4, cs$Q21)
 #Remove spaces for matching
 cs$site_room <- gsub('\\s+', '', cs$site_room)
+#Convert to factor
+cs$site_room <- as_factor(cs$site_room)
 
 #Convert char strings to numerics for col 15-111 (survey main body)
 cs [,15:111] <- as_tibble(
@@ -146,8 +149,8 @@ irus_data <- vroom("IrusData - Energy data Crescent and Warneford.csv",
 #Filter for room heaters only (takes out water heaters, kitchens etc)
 irus_data <- irus_data %>% filter(Type == "Room Heater") %>% arrange(Name)
 
-as.factor(irus_data$Name)
-as.factor(irus_data$Site)
+irus_data$Name <- as.factor(irus_data$Name)
+irus_data$Site <- as.factor(irus_data$Site)
 
 #Merge the Site and Room Name fields
 irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
@@ -160,10 +163,17 @@ irus_data$date_time <- fastPOSIXct(paste(irus_data$Date, irus_data$Time))
 #Convert rooms to factors (for graphing)
 irus_data$site_room <- as.factor(irus_data$site_room)
 
-#code to take out all the default settings (19 and 21 defaults)
-# irus_data %>%
-# filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
-# filter(Setpoint != 19)
+#Add daily mean setpoint and daily average temperature into dataframe
+irus_data <- irus_data %>% group_by(site_room, Date) %>% 
+  mutate(daily_mean_sp = mean(Setpoint, na.rm = TRUE),
+         daily_airtemp = mean(`Temp Air`, na.rm = TRUE))
+
+irus_data <- left_join(irus_data, irus_data %>% 
+                         group_by(site_room, Date) %>% 
+                         filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+                         filter(Setpoint != 19) %>% mutate(daily_mean_sp_excdflt = mean(
+                           Setpoint, na.rm = TRUE)))
+
 
 #Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -183,11 +193,11 @@ irus_data <- irus_data %>% mutate (sub19_after = ifelse(Date > as.Date(
   "2020-02-14") & Date < as.Date("2020-03-01") & Setpoint <19, Setpoint, NA))
 
 
-
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
-  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_before_excdflt = mean(Setpoint)), by = "site_room")
 
@@ -241,6 +251,19 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
 cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
 cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
+
+#Add daily set point averages (inc and exc defaults) and average air temp on df cs
+cs <-left_join(cs, irus_data %>% group_by(site_room, Date) %>%
+     summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
+       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt,
+                                                               na.rm = TRUE)) %>%
+       pivot_wider(names_from = Date, values_from = 
+                     c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
+                      by = "site_room")
+
+
+
+
 
 #END OF DATA CLEAN and SETUP
 
@@ -580,16 +603,47 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 #REGRESSION MODELLING
 
-#Multiple regression models
-model <- lm (likelyPEB_mean ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
-               NEP_mean + EAI_mean, data = cs)
-summary(model)
-model_activist <- lm (PEB_activist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
-               NEP_mean + EAI_mean, data = cs)
-summary(model_activist)
-model_pragmatist <- lm (PEB_pragmatist ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
-               NEP_mean + EAI_mean, data = cs)
-summary(model_pragmatist)
+#Model H1a (CADM validation)
+form_H1a <- likelyPEB_mean ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
+std_model_H1a <- standardize(form_H1a, cs)
+model_H1a <- lm(std_model_H1a$formula, std_model_H1a$data)
+summary(model_H1a)
+
+#Model H1a_act (Activist sub-score)
+form_H1a_act <- PEB_activist ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
+std_model_H1a_act <- standardize(form_H1a_act, cs)
+model_H1a_act <- lm(std_model_H1a_act$formula, std_model_H1a_act$data)
+summary(model_H1a_act)
+
+#Model H1a_prag (Pragmatist sub-score)
+form_H1a_prag <- PEB_pragmatist ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
+std_model_H1a_prag <- standardize(form_H1a_prag, cs)
+model_H1a_prag <- lm(std_model_H1a_prag$formula, std_model_H1a_prag$data)
+summary(model_H1a_prag)
+
+#Model H1b
+form_H1b <- thermo_change_excdflt ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
+std_model_H1b <- standardize(form_H1b, cs)
+model_H1b <- lm(std_model_H1b$formula, std_model_H1a$data)
+summary(model_H1b)
+
+
+
+
+
+
+
+#Model H1b
+form_H1b <- thermo_change_excdflt ~ BSCS_mean + MAC_mean + MFT_mean + thermo_moral_mean + 
+               NEP_mean + EAI_mean
+std_model_H1b <- standardize(form_H1b, cs)
+model_H1b <- lm(std_model_H1b$formula, std_model_H1b$data)
+summary(model_H1b)
+
 
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
