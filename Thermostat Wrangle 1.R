@@ -632,9 +632,77 @@ std_model_H1b <- standardize(form_H1b, cs)
 model_H1b <- lm(std_model_H1b$formula, std_model_H1b$data)
 summary(model_H1b)
 
-#REGRESSION MODEL TABLES
-#HYPOTHESIS 1
 tab_model(model_H1a, model_H1a_act, model_H1a_prag, model_H1b)
+
+#Model H1aD (CADM validation) likely_PEB w. DEMOGRAPHICS
+form_H1aD <- likelyPEB_mean ~ Q3 + Q13 + Q34 + Q15 + 
+  `Political orientation` + Q17
+std_model_H1aD <- standardize(form_H1aD, cs)
+model_H1aD <- lm(std_model_H1aD$formula, std_model_H1aD$data)
+summary(model_H1aD)
+
+#Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
+form_H1bD <- thermo_change_excdflt ~ Q3 + Q13 + Q34 + Q15 + 
+  `Political orientation` + Q17
+std_model_H1bD <- standardize(form_H1bD, cs)
+model_H1bD <- lm(std_model_H1bD$formula, std_model_H1bD$data)
+summary(model_H1bD)
+
+
+
+#HYPOTHESIS 2
+
+#Model 2a: EAI v NEP - claimed PEB
+form_H2a <- thermo_moral_mean ~ EAI_mean + NEP_mean
+std_model_H2a <- standardize(form_H2a, cs)
+model_H2a <- lm(std_model_H2a$formula, std_model_H2a$data)
+summary(model_H2a)
+
+#Model 2b: EAI v NEP - actual PEB
+form_H2b <- thermo_change_excdflt ~ EAI_mean + NEP_mean
+std_model_H2b <- standardize(form_H2b, cs)
+model_H2b <- lm(std_model_H2b$formula, std_model_H2b$data)
+summary(model_H2b)
+
+tab_model(model_H2a, model_H2b)
+
+
+#HYPOTHESIS 3
+form_H3 <- thermo_change_excdflt ~ BSCS_mean
+std_model_H3 <- standardize(form_H3, cs)
+model_H3 <- lm(std_model_H3$formula, std_model_H3$data)
+summary(model_H3)
+
+
+#HYPOTHESIS 4
+
+irus_data$communications <- NA
+attach(irus_data)
+irus_data$communications[Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")] <-
+  "Before"
+irus_data$communications[Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")] <- 
+  "After"
+detach(irus_data)
+
+form_H4 <- Setpoint ~ communications
+std_model_H4 <- standardize(form_H4, irus_data)
+model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
+summary(model_H4)
+
+form_H4i <- Setpoint ~ communications + Site
+std_model_H4i <- standardize(form_H4i, irus_data)
+model_H4i <- lm(std_model_H4i$formula, std_model_H4i$data)
+summary(model_H4i)
+
+
+
+form_H4ii <- Setpoint ~ communications + `Temp Air` + Site
+std_model_H4ii <- standardize(form_H4ii, irus_data)
+model_H4ii <- lm(std_model_H4ii$formula, std_model_H4ii$data)
+summary(model_H4ii)
+
+
+
 
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
