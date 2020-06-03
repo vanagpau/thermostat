@@ -12,7 +12,8 @@ library(fasttime)
 library(sjPlot)
 
 
-setwd("E:/R files")
+#setwd("E:/R files")
+setwd("/home/vanagpau/R/thermostat")
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
 
@@ -686,21 +687,15 @@ summary(model_H3)
 
 #HYPOTHESIS 4
 
+irus_data <- irus_data %>% 
+  group_by(Name) %>% 
+  mutate(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
+            room_after = mean(avg_setpoint_after))
 
-form_H4 <- Setpoint ~ communications
+form_H4 <- room_after ~ room_before + Site*communications
 std_model_H4 <- standardize(form_H4, irus_data)
 model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
 summary(model_H4)
-
-form_H4i <- Setpoint ~ communications + Site
-std_model_H4i <- standardize(form_H4i, irus_data)
-model_H4i <- lm(std_model_H4i$formula, std_model_H4i$data)
-summary(model_H4i)
-
-form_H4ii <- Setpoint ~ communications + `Temp Air` + Site
-std_model_H4ii <- standardize(form_H4ii, irus_data)
-model_H4ii <- lm(std_model_H4ii$formula, std_model_H4ii$data)
-summary(model_H4ii)
 
 form_test <- Setpoint ~ Site + communications + communications*Site
 std_model_test <- standardize(form_test, irus_data)
