@@ -147,10 +147,11 @@ cs <- cs %>% rename('Ascription responsibility' = Q8_4)
 irus_data <- vroom("IrusData - Energy data Crescent and Warneford.csv",
   col_names = TRUE, col_select = c(1:5, 7, 10, 11, 25, 26)
 )
-#Filter for room heaters only (takes out water heaters, kitchens etc)
-irus_data <- irus_data %>% filter(Type == "Room Heater") %>% arrange(Name)
+#Filter for student room heaters only (takes out water heaters, kitchens, offices etc)
+irus_data <- irus_data %>%
+  filter(Type == "Room Heater", Name != "Office", nchar(Name) <= 6) %>%
+  arrange(Name)
 
-irus_data$Name <- as.factor(irus_data$Name)
 irus_data$Site <- as.factor(irus_data$Site)
 
 #Merge the Site and Room Name fields
@@ -262,7 +263,16 @@ cs <-left_join(cs, irus_data %>% group_by(site_room, Date) %>%
                      c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
                       by = "site_room")
 
+#HYPOTHESIS 4 - add Before & After tags
 
+irus_data$communications <- 0
+irus_data$communications <- NA
+attach(irus_data)
+irus_data$communications[Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")] <-
+  "Before"
+irus_data$communications[Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")] <- 
+  "After"
+detach(irus_data)
 
 
 
@@ -449,7 +459,7 @@ with(cs, cor.test(MFT_mean, likelyPEB_mean))
 with(cs, cor.test(MFT_mean, PEB_activist))
 with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
-#Do the whole thing as one big correlation matrix
+#Do the whole thing as one big correlation matrix - ACTUAL behaviour
 
 M <- cs %>% select('Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'Awareness consequences', 'Ascription responsibility', 
               NEP_mean, EAI_mean, 'Social norm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
@@ -676,13 +686,6 @@ summary(model_H3)
 
 #HYPOTHESIS 4
 
-irus_data$communications <- NA
-attach(irus_data)
-irus_data$communications[Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")] <-
-  "Before"
-irus_data$communications[Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")] <- 
-  "After"
-detach(irus_data)
 
 form_H4 <- Setpoint ~ communications
 std_model_H4 <- standardize(form_H4, irus_data)
@@ -694,13 +697,15 @@ std_model_H4i <- standardize(form_H4i, irus_data)
 model_H4i <- lm(std_model_H4i$formula, std_model_H4i$data)
 summary(model_H4i)
 
-
-
 form_H4ii <- Setpoint ~ communications + `Temp Air` + Site
 std_model_H4ii <- standardize(form_H4ii, irus_data)
 model_H4ii <- lm(std_model_H4ii$formula, std_model_H4ii$data)
 summary(model_H4ii)
 
+form_test <- Setpoint ~ Site + communications + communications*Site
+std_model_test <- standardize(form_test, irus_data)
+model_test <- lm(std_model_test$formula, std_model_test$data)
+summary(model_test)
 
 
 
