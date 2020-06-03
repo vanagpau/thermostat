@@ -687,13 +687,13 @@ summary(model_H3)
 
 #HYPOTHESIS 4
 
-irus_data <- irus_data %>% 
-  group_by(Name) %>% 
-  mutate(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
+H4 <- irus_data %>% 
+  group_by(Name, Site) %>% 
+  summarise(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
             room_after = mean(avg_setpoint_after))
 
-form_H4 <- room_after ~ room_before + Site*communications
-std_model_H4 <- standardize(form_H4, irus_data)
+form_H4 <- room_after ~ 1 + room_before + Site
+std_model_H4 <- standardize(form_H4, H4)
 model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
 summary(model_H4)
 
