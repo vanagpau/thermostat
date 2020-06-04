@@ -523,9 +523,29 @@ t.test(t_inc$after,t_inc$before,paired=TRUE, na.rm = TRUE)
 #averages of thermo setting before and after EXC defaults
 mean(irus_data$avg_sp_before_excdflt, na.rm = TRUE)
 mean(irus_data$avg_sp_after_excdflt, na.rm = TRUE)
-t_exc <- irus_data %>% group_by(site_room) %>%
+t_excdflt <- irus_data %>% group_by(site_room) %>%
   summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
-t.test(t_exc$after,t_exc$before, paired=TRUE)
+t.test(t_excdflt$after,t_excdflt$before, paired=TRUE)
+
+#Mean external temp before (6.9 celsius) and after (7.0) comms
+irus_data %>% ungroup() %>%
+  filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
+  summarise(average_before = mean(Ext_temp_celsius))
+
+irus_data %>% ungroup() %>%
+  filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
+  summarise(average_before = mean(Ext_temp_celsius))
+
+
+#correlation between thermostat setting and external temperature      
+
+t_external <- irus_data %>% 
+  group_by(Date) %>% 
+  filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  summarise(ext = mean(Ext_temp_celsius), daily = mean(daily_mean_sp_excdflt, na.rm = TRUE))
+cor.test(t_external$ext, t_external$daily)
+
 
 #For each room filter to include only those which include defaults 19 and 21
 #Sort by proportion of observations which are default (low propn = high interaction)
@@ -848,8 +868,22 @@ irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
   avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after), thermo_change = mean(
   thermo_change)) %>% filter(thermo_change < -1) %>% arrange(thermo_change) %>% print(n = 100)
 
-#Plot of daily external temp and mean thermostat setting
-irus_data %>% group_by(Date) %>% summarise(ext = mean(Ext_temp_celsius)) %>%
-  ggplot(mapping = aes(x = Date, y = Ext_temp_celsius)) + geom_point()
 
+
+#Plot of daily external temp and mean thermostat setting
+
+irus_data %>% 
+  group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+            (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  summarise(External = mean(Ext_temp_celsius), 
+            Thermostat_exc_dflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
+            Thermostat = mean(Setpoint, na.rm = TRUE)) %>%
+  ggplot() + geom_line(aes(x = Date, y = Thermostat_exc_dflt, colour = "Thermostat_exc_dflt")) + 
+  geom_line(aes(x = Date, y = External, colour = "External")) + 
+  labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", 
+       y = "Temp (celsius)") + 
+  geom_line(aes(x = Date, y = Thermostat, colour = "Thermostat"), linetype = "dotted") +
+  scale_color_manual(values = c(
+    "External" = "royalblue3", "Thermostat" = "black", "Thermostat_exc_dflt" = "red"))
+  
 
