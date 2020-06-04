@@ -12,10 +12,12 @@ library(fasttime)
 library(sjPlot)
 
 
-#setwd("E:/R files")
-setwd("/home/vanagpau/R/thermostat")
+setwd("E:/R files")
+#For Laptop work setwd("/home/vanagpau/R/thermostat")
+#Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
+
 
 #Create filter for all completed and non-preview surveys: cs ('completed surveys')
 cs <- VEB %>% filter(Status == "IP Address", Progress == "100")
@@ -146,14 +148,23 @@ cs <- cs %>% rename('Ascription responsibility' = Q8_4)
 
 #Read in the Irus data (hourly, without interactions)
 irus_data <- vroom("IrusData - Energy data Crescent and Warneford.csv",
-  col_names = TRUE, col_select = c(1:5, 7, 10, 11, 25, 26)
-)
+  col_names = TRUE, col_select = c(1:5, 7, 10, 11, 25, 26))
+
 #Filter for student room heaters only (takes out water heaters, kitchens, offices etc)
 irus_data <- irus_data %>%
   filter(Type == "Room Heater", Name != "Office", nchar(Name) <= 6) %>%
   arrange(Name)
 
 irus_data$Site <- as.factor(irus_data$Site)
+
+#Load external temperature data (source: Weather Online)
+external_temp <- tibble(fread("Oxford temp data.csv") %>%
+  rename(Ext_temp_celsius = `Temp 2m [C]`) %>%
+  select(Date, Ext_temp_celsius))
+external_temp$Date <- as.Date(external_temp$Date, "%d/%m/%Y")
+str(external_temp)
+
+irus_data <- left_join(irus_data, external_temp, by = "Date")
 
 #Merge the Site and Room Name fields
 irus_data$site_room <- paste(irus_data$Site, irus_data$Name)
@@ -311,6 +322,8 @@ summary(cs$PEB_pragmatist)
 lapply(cs[132:138], shapiro.test)
 
 
+#Descrptive statistics for external temperature data
+
 
 #Factor Analysis
 
@@ -370,8 +383,6 @@ r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
 #Significance test of EAI vs NEP correlations vs actual thermostat control
 r.test(r12=(with(cs, cor(EAI_mean, thermo_change_excdflt))), n=88, r34=(
   with(cs, cor(NEP_mean, thermo_change_excdflt))), n2=88)
-
-
 
 #Correlations and significance compared to CADM
 
@@ -659,6 +670,7 @@ std_model_H1bD <- standardize(form_H1bD, cs)
 model_H1bD <- lm(std_model_H1bD$formula, std_model_H1bD$data)
 summary(model_H1bD)
 
+plot_model(model_H1bD)
 
 
 #HYPOTHESIS 2
@@ -668,6 +680,8 @@ form_H2a <- thermo_moral_mean ~ EAI_mean + NEP_mean
 std_model_H2a <- standardize(form_H2a, cs)
 model_H2a <- lm(std_model_H2a$formula, std_model_H2a$data)
 summary(model_H2a)
+
+plot_model(model_H2a)
 
 #Model 2b: EAI v NEP - actual PEB
 form_H2b <- thermo_change_excdflt ~ EAI_mean + NEP_mean
@@ -687,22 +701,17 @@ summary(model_H3)
 
 #HYPOTHESIS 4
 
-H4 <- irus_data %>% 
+H4 <- data.frame (irus_data %>% 
   group_by(Name, Site) %>% 
   summarise(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
-            room_after = mean(avg_setpoint_after))
+            room_after = mean(avg_setpoint_after)))
 
-form_H4 <- room_after ~ 1 + room_before + Site
+form_H4 <- room_after ~ 1 + room_before + Site + room_before*Site
 std_model_H4 <- standardize(form_H4, H4)
 model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
 summary(model_H4)
 
-form_test <- Setpoint ~ Site + communications + communications*Site
-std_model_test <- standardize(form_test, irus_data)
-model_test <- lm(std_model_test$formula, std_model_test$data)
-summary(model_test)
-
-
+plot_model(model_H4, type = c("std"))
 
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
@@ -822,23 +831,25 @@ grid.arrange(plotA01A, plotA01B, plotA01C, nrow = 3)
 irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(
   thermo_change)) %>% ggplot() + geom_point(mapping = aes(x = site_room, y = thermo_change))
 
-irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(
-  thermo_change)) %>% ggplot() + geom_histogram(mapping = aes(thermo_change), binwidth = .5) +
-  geom_vline(xintercept = -0.57, linetype = "dashed") + geom_label(x=-3, y=100, label="Mean change = -0.42")
+irus_data %>% group_by(site_room) %>% 
+  summarise(thermo_change = mean(thermo_change)) %>%
+  ggplot() + geom_histogram(mapping = aes(thermo_change), binwidth = .5) +
+  geom_vline(xintercept = -0.57, linetype = "dashed") +
+  geom_label(x=-2, y=100, label="Mean change = -0.XX?")
 
 
-
-#I can't rank this by y-axis size
+#Actual thermo_change by room ranked by change
 irus_data %>% group_by(site_room) %>% summarise(thermo_change = mean(thermo_change)) %>%
   mutate(site_room = fct_reorder(site_room, thermo_change)) %>% 
  ggplot() + geom_col(mapping = aes(x = site_room, y = thermo_change))
 
-#List of rooms with greater than 3 degree drop in thermostat setting
+#List of rooms with greater than 1 degree drop in thermostat setting
 irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
   avg_setpoint_before), avg_setpoint_after = mean(avg_setpoint_after), thermo_change = mean(
-  thermo_change)) %>% filter(thermo_change < -3) %>% arrange(thermo_change) %>% print(n = 100)
+  thermo_change)) %>% filter(thermo_change < -1) %>% arrange(thermo_change) %>% print(n = 100)
 
+#Plot of daily external temp and mean thermostat setting
+irus_data %>% group_by(Date) %>% summarise(ext = mean(Ext_temp_celsius)) %>%
+  ggplot(mapping = aes(x = Date, y = Ext_temp_celsius)) + geom_point()
 
-
-#WORKSPACE
 
