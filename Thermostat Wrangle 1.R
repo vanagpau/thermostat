@@ -10,6 +10,7 @@ library(lubridate)
 library(vroom)
 library(fasttime)
 library(sjPlot)
+library(naniar)
 
 
 setwd("E:/R files")
@@ -40,6 +41,9 @@ cs <- cs %>% lapply(gsub, pattern = "7 = Very liberal", replacement = 7)
 
 #Convert Crescent & Warneford to characters
 cs$Q3 <- as.character(cs$Q3)
+
+#Convert Age data to numeric
+cs$Q34 <- as.numeric(cs$Q34)
 
 #Coerce list back to tibble
 cs <- as_tibble(cs)
@@ -97,9 +101,6 @@ EAI12 = mean(c(Q6_23, Q6_24), na.rm = TRUE),
 EAI_mean = mean(c(
   Q6_1, Q6_2, Q6_3, Q6_4, Q6_5, Q6_7, Q6_8, Q6_9, Q6_10, Q6_11, Q6_12, Q6_13,
   Q6_14, Q6_15, Q6_16, Q6_17, Q6_18, Q6_19, Q6_20, Q6_21, Q6_22, Q6_23, Q6_24), na.rm = TRUE)) %>% ungroup()
-
-#Create EAI sub-scales data frame
-EAI_subscales <- cs %>% select(EAI1:EAI12)
 
 #Create scales
 NEP <- cs %>% select(Q5_1:Q5_15)
@@ -236,17 +237,15 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < a
   "2020-03-01")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
 
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
-  "2020-02-14"
-)) %>% group_by(site_room) %>% summarise(
-  avg_setpoint_before = mean(Setpoint)
-), by = "site_room")
+cs <- left_join(cs, irus_data %>%
+    filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
+    group_by(site_room) %>% 
+    summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
 
-cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
-  "2020-03-01"
-)) %>% group_by(site_room) %>% summarise(
-  avg_setpoint_after = mean(Setpoint)
-), by = "site_room")
+cs <- left_join(cs, irus_data %>% 
+                  filter(Date > as.Date("2020-02-14") & Date < as.Date(  "2020-03-01")) %>%
+                  group_by(site_room) %>%
+                  summarise(avg_setpoint_after = mean(Setpoint)), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
@@ -266,14 +265,16 @@ cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
 cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
 
-#Add daily set point averages (inc and exc defaults) and average air temp on df cs
-cs <-left_join(cs, irus_data %>% group_by(site_room, Date) %>%
-     summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt,
-                                                               na.rm = TRUE)) %>%
-       pivot_wider(names_from = Date, values_from = 
-                     c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
-                      by = "site_room")
+# #Add daily set point averages (inc and exc defaults) 
+#and average air temp on df cs (for Adam)
+
+# cs <-left_join(cs, irus_data %>% group_by(site_room, Date) %>%
+#      summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
+#        `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt,
+#                                                                na.rm = TRUE)) %>%
+#        pivot_wider(names_from = Date, values_from = 
+#                      c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
+#                       by = "site_room")
 
 #HYPOTHESIS 4 - add Before & After tags
 
@@ -285,6 +286,29 @@ irus_data$communications[Date > as.Date("2020-01-30") & Date < as.Date("2020-02-
 irus_data$communications[Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")] <- 
   "After"
 detach(irus_data)
+
+#Remove actual (Irus) data from duplicate room L04F - replace with NAs
+cs[(which(grepl("L04F", cs$Q4))),(match("sub19_before",names(cs))):(
+  match("daily_airtemp_2020-03-13",names(cs)))] <- NA
+
+#Standardise key variables
+cs <- cs %>% mutate(likelyPEB_mean_sz = scale(likelyPEB_mean))
+cs <- cs %>% mutate(EAI_mean_sz = scale(EAI_mean))
+cs <- cs %>% mutate(PEB_activist_sz = scale(PEB_activist))
+cs <- cs %>% mutate(PEB_pragmatist_sz = scale(PEB_pragmatist))
+cs <- cs %>% mutate(thermo_moral_mean_sz = scale(thermo_moral_mean))
+cs <- cs %>% mutate(MAC_mean_sz = scale(MAC_mean))
+cs <- cs %>% mutate(MFT_mean_sz = scale(MFT_mean))
+cs <- cs %>% mutate(sub19_before_sz = scale(sub19_before))
+cs <- cs %>% mutate(sub19_after_sz = scale(sub19_after))
+cs <- cs %>% mutate(avg_setpoint_before_sz = scale(avg_setpoint_before))
+cs <- cs %>% mutate(avg_setpoint_after_sz = scale(avg_setpoint_after))
+cs <- cs %>% mutate(avg_sp_before_excdflt_sz = scale(avg_sp_before_excdflt))
+cs <- cs %>% mutate(avg_sp_after_excdflt_sz = scale(avg_sp_after_excdflt))
+cs <- cs %>% mutate(thermo_change_sz = scale(thermo_change))
+cs <- cs %>% mutate(sub19_change_sz = scale(sub19_change))
+cs <- cs %>% mutate(thermo_change_excdflt_sz = scale(thermo_change_excdflt))
+
 
 
 
@@ -321,9 +345,10 @@ summary(cs$PEB_pragmatist)
 #Shapiro-Wilk test on all scales
 lapply(cs[132:138], shapiro.test)
 
+#Descriptive stats on participants
 
-#Descrptive statistics for external temperature data
-
+mean(cs$Q34, na.rm = TRUE)
+describe(cs$Q34)
 
 #Factor Analysis
 
@@ -582,14 +607,14 @@ irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-1
 
 
 
-#Number of observations in the analysis date range NOT default = 110,581
+#Number of observations in the analysis date range NOT default = 105,643
 irus_data %>%   
   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
      Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>%
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
   filter(Setpoint != 19)
 
-#Number of observations in the analysis date range @ default = 268,526
+#Number of observations in the analysis date range @ default = 260,045
 irus_data %>% filter(Setpoint == 19 | Setpoint == 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
 +     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
 #Out of 368k = 73% @ default setting
@@ -646,12 +671,36 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 #REGRESSION MODELLING
 
-#Model H1a (CADM validation)
+#Model H1a (CADM validation) - PV version
 form_H1a <- likelyPEB_mean ~ `Awareness consequences` + `Habit` + `Social norm` + 
   `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
 std_model_H1a <- standardize(form_H1a, cs)
 model_H1a <- lm(std_model_H1a$formula, std_model_H1a$data)
 summary(model_H1a)
+
+#Model H1a (CADM validation) - removed formula line
+std_model_H1a <- standardize(likelyPEB_mean ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean, cs)
+model_H1a <- lm(likelyPEB_mean ~ `Awarenessconsequences` + `Habit` + `Socialnorm` + 
+  `Ascriptionresponsibility` + `PBC` + `Intention` + NEP_mean, std_model_H1a$data)
+summary(model_H1a)
+
+
+
+
+#Gives error
+plot_model(model_H1a, type = c("pred"), terms = c(`Habit`))
+
+#Model H1a (CADM validation) - removed formula line + manual standardisation
+model_H1a <- lm(scale(cs$likelyPEB_mean) ~ `Awareness consequences` + `Habit` + `Social norm` + 
+  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean, cs)
+summary(model_H1a)
+
+
+
+
+
+
 
 #Model H1a_act (Activist sub-score)
 form_H1a_act <- PEB_activist ~ `Awareness consequences` + `Habit` + `Social norm` + 
@@ -724,9 +773,9 @@ summary(model_H3)
 H4 <- data.frame (irus_data %>% 
   group_by(Name, Site) %>% 
   summarise(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
-            room_after = mean(avg_setpoint_after)))
+            room_after = mean(avg_setpoint_after), external = mean(Ext_temp_celsius)))
 
-form_H4 <- room_after ~ 1 + room_before + Site + room_before*Site
+form_H4 <- room_after ~ 1 + room_before + Site + room_before*Site + external
 std_model_H4 <- standardize(form_H4, H4)
 model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
 summary(model_H4)
@@ -738,7 +787,6 @@ plot_model(model_H4, type = c("std"))
 cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
 cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
 
-#to remove this room: cs %>% filter(Q4 != "L04F")
 
 
 
