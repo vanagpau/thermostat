@@ -130,11 +130,11 @@ cs <- cbind(cs, MFT_mean = rowMeans(moral_found, na.rm = TRUE))
 #Rename column names to descriptives: cs %>% rename(new = old)
 cs <- cs %>% rename('Political orientation' = Q35_1)
 cs <- cs %>% rename('Habit' = Q8_2)
-cs <- cs %>% rename('Social norm' = Q8_3)
+cs <- cs %>% rename('SocialNorm' = Q8_3)
 cs <- cs %>% rename('PBC' = Q8_5)
-cs <- cs %>% rename('Awareness consequences' = Q8_1)
+cs <- cs %>% rename('AwarenessConsequences' = Q8_1)
 cs <- cs %>% rename('Intention' = Q8_6)
-cs <- cs %>% rename('Ascription responsibility' = Q8_4)
+cs <- cs %>% rename('AscriptionResponsibility' = Q8_4)
 
 
 #LOAD IN THE THERMOSTAT DATA
@@ -292,22 +292,35 @@ cs[(which(grepl("L04F", cs$Q4))),(match("sub19_before",names(cs))):(
   match("daily_airtemp_2020-03-13",names(cs)))] <- NA
 
 #Standardise key variables
-cs <- cs %>% mutate(likelyPEB_mean_sz = scale(likelyPEB_mean))
-cs <- cs %>% mutate(EAI_mean_sz = scale(EAI_mean))
-cs <- cs %>% mutate(PEB_activist_sz = scale(PEB_activist))
-cs <- cs %>% mutate(PEB_pragmatist_sz = scale(PEB_pragmatist))
-cs <- cs %>% mutate(thermo_moral_mean_sz = scale(thermo_moral_mean))
-cs <- cs %>% mutate(MAC_mean_sz = scale(MAC_mean))
-cs <- cs %>% mutate(MFT_mean_sz = scale(MFT_mean))
-cs <- cs %>% mutate(sub19_before_sz = scale(sub19_before))
-cs <- cs %>% mutate(sub19_after_sz = scale(sub19_after))
-cs <- cs %>% mutate(avg_setpoint_before_sz = scale(avg_setpoint_before))
-cs <- cs %>% mutate(avg_setpoint_after_sz = scale(avg_setpoint_after))
-cs <- cs %>% mutate(avg_sp_before_excdflt_sz = scale(avg_sp_before_excdflt))
-cs <- cs %>% mutate(avg_sp_after_excdflt_sz = scale(avg_sp_after_excdflt))
-cs <- cs %>% mutate(thermo_change_sz = scale(thermo_change))
-cs <- cs %>% mutate(sub19_change_sz = scale(sub19_change))
-cs <- cs %>% mutate(thermo_change_excdflt_sz = scale(thermo_change_excdflt))
+cs <- cs %>% mutate(likelyPEB_mean_sz = as.numeric(scale(likelyPEB_mean)))
+cs <- cs %>% mutate(EAI_mean_sz = as.numeric(scale(EAI_mean)))
+cs <- cs %>% mutate(NEP_mean_sz = as.numeric(scale(NEP_mean)))
+cs <- cs %>% mutate(PEB_activist_sz = as.numeric(scale(PEB_activist)))
+cs <- cs %>% mutate(PEB_pragmatist_sz = as.numeric(scale(PEB_pragmatist)))
+cs <- cs %>% mutate(thermo_moral_mean_sz = as.numeric(scale(thermo_moral_mean)))
+cs <- cs %>% mutate(MAC_mean_sz = as.numeric(scale(MAC_mean)))
+cs <- cs %>% mutate(MFT_mean_sz = as.numeric(scale(MFT_mean)))
+cs <- cs %>% mutate(sub19_before_sz = as.numeric(scale(sub19_before)))
+cs <- cs %>% mutate(sub19_after_sz = as.numeric(scale(sub19_after)))
+cs <- cs %>% mutate(avg_setpoint_before_sz = as.numeric(scale(avg_setpoint_before)))
+cs <- cs %>% mutate(avg_setpoint_after_sz = as.numeric(scale(avg_setpoint_after)))
+cs <- cs %>% mutate(avg_sp_before_excdflt_sz = as.numeric(scale(avg_sp_before_excdflt)))
+cs <- cs %>% mutate(avg_sp_after_excdflt_sz = as.numeric(scale(avg_sp_after_excdflt)))
+cs <- cs %>% mutate(thermo_change_sz = as.numeric(scale(thermo_change)))
+cs <- cs %>% mutate(sub19_change_sz = as.numeric(scale(sub19_change)))
+cs <- cs %>% mutate(thermo_change_excdflt_sz = as.numeric(scale(thermo_change_excdflt)))
+cs <- cs %>% mutate(AwarenessConsequences_sz = as.numeric(scale(AwarenessConsequences)))
+cs <- cs %>% mutate(Habit_sz = as.numeric(scale(Habit)))
+cs <- cs %>% mutate(Intention_sz = as.numeric(scale(Intention)))
+cs <- cs %>% mutate(SocialNorm_sz = as.numeric(scale(SocialNorm)))
+cs <- cs %>% mutate(AscriptionResponsibility_sz = as.numeric(scale(AscriptionResponsibility)))
+cs <- cs %>% mutate(PBC_sz = as.numeric(scale(PBC)))
+cs <- cs %>% mutate(BSCS_mean_sz = as.numeric(scale(BSCS_mean)))
+
+
+
+
+
 
 
 
@@ -353,7 +366,7 @@ describe(cs$Q34)
 #Factor Analysis
 
 #FA of Attitudes scale
-cs %>% select('Awareness consequences':Q8_9) %>% cor() %>% fa.parallel(
+cs %>% select('AwarenessConsequences':Q8_9) %>% cor() %>% fa.parallel(
   n.obs=88, main = "Parallel Analysis scree plot - Attitude scale")
 
 #FA of likely PEB scale
@@ -419,20 +432,20 @@ with(cs, cor.test(cs$'Political orientation', thermo_change))
 with(cs, cor.test(cs$'Political orientation', sub19_change))
 
 #Correlation Awareness of Consequences w. likely PEB
-with(cs, cor.test(cs$'Awareness consequences', likelyPEB_mean))
-with(cs, cor.test(cs$'Awareness consequences', PEB_activist))
-with(cs, cor.test(cs$'Awareness consequences', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', PEB_activist))), n2 = 13215, r34 = .22)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Awareness consequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
+with(cs, cor.test(cs$'AwarenessConsequences', likelyPEB_mean))
+with(cs, cor.test(cs$'AwarenessConsequences', PEB_activist))
+with(cs, cor.test(cs$'AwarenessConsequences', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_activist))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
 
 #Correlation Ascription of Responsibility w. likely PEB
-with(cs, cor.test(cs$'Ascription responsibility', likelyPEB_mean))
-with(cs, cor.test(cs$'Ascription responsibility', PEB_activist))
-with(cs, cor.test(cs$'Ascription responsibility', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', PEB_activist))), n2 = 4217, r34 = .10)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Ascription responsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
+with(cs, cor.test(cs$'AscriptionResponsibility', likelyPEB_mean))
+with(cs, cor.test(cs$'AscriptionResponsibility', PEB_activist))
+with(cs, cor.test(cs$'AscriptionResponsibility', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_activist))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
 
 #Correlation NEP w. likely PEB
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
@@ -442,13 +455,13 @@ r.test(n = 88, r12 = (with(cs, cor(NEP_mean, likelyPEB_mean))), n2 = 3499, r34 =
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .09)
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
 
-#Correlation Social Norm w. likely PEB
-with(cs, cor.test(cs$'Social norm', likelyPEB_mean))
-with(cs, cor.test(cs$'Social norm', PEB_activist))
-with(cs, cor.test(cs$'Social norm', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', likelyPEB_mean))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', PEB_activist))), n2 = 14170, r34 = .24)
-r.test(n = 88, r12 = (with(cs, cor(cs$'Social norm', PEB_pragmatist))), n2 = 14170, r34 = .24)
+#Correlation SocialNorm w. likely PEB
+with(cs, cor.test(cs$'SocialNorm', likelyPEB_mean))
+with(cs, cor.test(cs$'SocialNorm', PEB_activist))
+with(cs, cor.test(cs$'SocialNorm', PEB_pragmatist))
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', likelyPEB_mean))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_activist))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_pragmatist))), n2 = 14170, r34 = .24)
 
 #Correlation Perceived Behavioural Control w. likely PEB
 with(cs, cor.test(cs$'PBC', likelyPEB_mean))
@@ -498,8 +511,8 @@ with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 
-M <- cs %>% select('Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'Awareness consequences', 'Ascription responsibility', 
-              NEP_mean, EAI_mean, 'Social norm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+M <- cs %>% select('Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
               MAC_mean, MFT_mean, thermo_change_excdflt) %>% 
   cor(use = "pairwise.complete.obs")
 
@@ -518,11 +531,11 @@ write.table(res1$p, file = "p_values.txt", sep = ",", quote = FALSE, row.names =
 #Correlations with Actual PEB
 
 with(cs, cor.test(cs$'Political orientation', thermo_change_excdflt))
-with(cs, cor.test(cs$'Awareness consequences', thermo_change_excdflt))
-with(cs, cor.test(cs$'Ascription responsibility', thermo_change_excdflt))
+with(cs, cor.test(cs$'AwarenessConsequences', thermo_change_excdflt))
+with(cs, cor.test(cs$'AscriptionResponsibility', thermo_change_excdflt))
 with(cs, cor.test(NEP_mean, thermo_change_excdflt))
 with(cs, cor.test(EAI_mean, thermo_change_excdflt))
-with(cs, cor.test(cs$'Social norm', thermo_change_excdflt))
+with(cs, cor.test(cs$'SocialNorm', thermo_change_excdflt))
 with(cs, cor.test(cs$'PBC', thermo_change_excdflt))
 with(cs, cor.test(cs$'Habit', thermo_change_excdflt))
 with(cs, cor.test(cs$'Intention', thermo_change_excdflt))
@@ -671,72 +684,60 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 #REGRESSION MODELLING
 
-#Model H1a (CADM validation) - PV version
-form_H1a <- likelyPEB_mean ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
-std_model_H1a <- standardize(form_H1a, cs)
-model_H1a <- lm(std_model_H1a$formula, std_model_H1a$data)
-summary(model_H1a)
-
-#Model H1a (CADM validation) - removed formula line
-std_model_H1a <- standardize(likelyPEB_mean ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean, cs)
-model_H1a <- lm(likelyPEB_mean ~ `Awarenessconsequences` + `Habit` + `Socialnorm` + 
-  `Ascriptionresponsibility` + `PBC` + `Intention` + NEP_mean, std_model_H1a$data)
-summary(model_H1a)
-
-
-
-
-#Gives error
-plot_model(model_H1a, type = c("pred"), terms = c(`Habit`))
+# #Model H1a (CADM validation) - PV version
+# form_H1a <- likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
+#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean
+# std_model_H1a <- standardize(form_H1a, cs)
+# model_H1a <- lm(std_model_H1a$formula, std_model_H1a$data)
+# summary(model_H1a)
+# 
+# #Model H1a (CADM validation) - removed formula line
+# std_model_H1a <- standardize(likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
+#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean, cs)
+# model_H1a <- lm(likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
+#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean, std_model_H1a$data)
+# summary(model_H1a)
+# 
+# #Gives error - "Error: variables xx were specified with different types from the fit"
+# Using scale or standardize creates something which sjPlot can't use for some reason
+# plot_model(model_H1a, type = c("pred"), terms = c())
+# But this works.. Yippeeeeee!!!!!!!!!!
 
 #Model H1a (CADM validation) - removed formula line + manual standardisation
-model_H1a <- lm(scale(cs$likelyPEB_mean) ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean, cs)
+model_H1a <- lm(likelyPEB_mean_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
 summary(model_H1a)
+model_H1a
 
-
-
-
-
-
+plot_model(model_H1a, type = c("pred"), terms = c())
+plot_model(model_H1a, type = c("std"))
 
 #Model H1a_act (Activist sub-score)
-form_H1a_act <- PEB_activist ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
-std_model_H1a_act <- standardize(form_H1a_act, cs)
-model_H1a_act <- lm(std_model_H1a_act$formula, std_model_H1a_act$data)
+model_H1a_act <- lm(PEB_activist_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
 summary(model_H1a_act)
 
+
 #Model H1a_prag (Pragmatist sub-score)
-form_H1a_prag <- PEB_pragmatist ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
-std_model_H1a_prag <- standardize(form_H1a_prag, cs)
-model_H1a_prag <- lm(std_model_H1a_prag$formula, std_model_H1a_prag$data)
+model_H1a_prag <- lm(PEB_pragmatist_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
 summary(model_H1a_prag)
 
 #Model H1b
-form_H1b <- thermo_change_excdflt ~ `Awareness consequences` + `Habit` + `Social norm` + 
-  `Ascription responsibility` + `PBC` + `Intention` + NEP_mean
-std_model_H1b <- standardize(form_H1b, cs)
-model_H1b <- lm(std_model_H1b$formula, std_model_H1b$data)
+model_H1b <- lm(thermo_change_excdflt_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
 summary(model_H1b)
 
 tab_model(model_H1a, model_H1a_act, model_H1a_prag, model_H1b)
 
 #Model H1aD (CADM validation) likely_PEB w. DEMOGRAPHICS
-form_H1aD <- likelyPEB_mean ~ Q3 + Q13 + Q34 + Q15 + 
-  `Political orientation` + Q17
-std_model_H1aD <- standardize(form_H1aD, cs)
-model_H1aD <- lm(std_model_H1aD$formula, std_model_H1aD$data)
+model_H1aD <- lm(likelyPEB_mean_sz ~ Q3 + Q13 + Q34 + Q15 +
+                   `Political orientation` + Q17, cs)
 summary(model_H1aD)
 
 #Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
-form_H1bD <- thermo_change_excdflt ~ Q3 + Q13 + Q34 + Q15 + 
-  `Political orientation` + Q17
-std_model_H1bD <- standardize(form_H1bD, cs)
-model_H1bD <- lm(std_model_H1bD$formula, std_model_H1bD$data)
+model_H1bD <- lm(thermo_change_excdflt_sz ~ Q3 + Q13 + Q34 + Q15 + 
+  `Political orientation` + Q17, cs)
 summary(model_H1bD)
 
 plot_model(model_H1bD)
@@ -745,42 +746,40 @@ plot_model(model_H1bD)
 #HYPOTHESIS 2
 
 #Model 2a: EAI v NEP - claimed PEB
-form_H2a <- thermo_moral_mean ~ EAI_mean + NEP_mean
-std_model_H2a <- standardize(form_H2a, cs)
-model_H2a <- lm(std_model_H2a$formula, std_model_H2a$data)
+model_H2a <- lm(thermo_moral_mean_sz ~ EAI_mean_sz + NEP_mean_sz, cs)
 summary(model_H2a)
 
 plot_model(model_H2a)
 
 #Model 2b: EAI v NEP - actual PEB
-form_H2b <- thermo_change_excdflt ~ EAI_mean + NEP_mean
-std_model_H2b <- standardize(form_H2b, cs)
-model_H2b <- lm(std_model_H2b$formula, std_model_H2b$data)
+model_H2b <- lm(thermo_change_excdflt_sz ~ EAI_mean_sz + NEP_mean_sz, cs)
 summary(model_H2b)
 
 tab_model(model_H2a, model_H2b)
 
 
 #HYPOTHESIS 3
-form_H3 <- thermo_change_excdflt ~ BSCS_mean
-std_model_H3 <- standardize(form_H3, cs)
-model_H3 <- lm(std_model_H3$formula, std_model_H3$data)
+model_H3 <- lm(thermo_change_excdflt_sz ~ BSCS_mean_sz, cs)
 summary(model_H3)
 
 
 #HYPOTHESIS 4
 
-H4 <- data.frame (irus_data %>% 
+H4 <- irus_data %>% 
   group_by(Name, Site) %>% 
   summarise(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
-            room_after = mean(avg_setpoint_after), external = mean(Ext_temp_celsius)))
+            room_after = mean(avg_setpoint_after), external = mean(Ext_temp_celsius)) %>%
+  ungroup()
+H4 <- H4 %>% mutate(room_before_sz = as.numeric(scale(room_before)))
+H4 <- H4 %>% mutate(room_after_sz = as.numeric(scale(room_after)))
+H4 <- H4 %>% mutate(external_sz = as.numeric(scale(external)))
 
-form_H4 <- room_after ~ 1 + room_before + Site + room_before*Site + external
-std_model_H4 <- standardize(form_H4, H4)
-model_H4 <- lm(std_model_H4$formula, std_model_H4$data)
+model_H4 <- lm(room_after_sz ~ room_before_sz + Site + room_before_sz*Site + external_sz, H4)
 summary(model_H4)
 
+tab_model(model_H4)
 plot_model(model_H4, type = c("std"))
+plot_model(model_H4, type = c("pred"), terms = c())
 
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
