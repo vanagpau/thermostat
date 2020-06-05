@@ -572,23 +572,23 @@ irus_data %>% ungroup() %>%
 
 irus_data %>% ungroup() %>%
   filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
-  summarise(average_before = mean(Ext_temp_celsius))
+  summarise(average_after = mean(Ext_temp_celsius))
 
 
-#correlation between thermostat setting and external temperature      
-
+#correlation between thermostat setting (exc dflt) and external temp = -.56; p = .001  
 t_external <- irus_data %>% 
   group_by(Date) %>% 
   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
 (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
   summarise(ext = mean(Ext_temp_celsius), daily = mean(daily_mean_sp_excdflt, na.rm = TRUE))
+
 cor.test(t_external$ext, t_external$daily)
 
 
 #For each room filter to include only those which include defaults 19 and 21
 #Sort by proportion of observations which are default (low propn = high interaction)
 
-irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
+irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>% 
   filter(Setpoint == 19 | Setpoint == 21) %>%
   group_by(site_room) %>% 
