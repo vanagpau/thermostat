@@ -510,28 +510,34 @@ with(cs, cor.test(MFT_mean, PEB_activist))
 with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
+#M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
 
-M <- cs %>% select('Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+M <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
-              MAC_mean, MFT_mean, thermo_change_excdflt) %>% 
-  cor(use = "pairwise.complete.obs")
+              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
+
+M_full <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+              MAC_mean, MFT_mean) %>% corr.test()
+
+print(M_full, short = FALSE)
 
 corrplot(M, method = "number", type = "lower", order = "AOE")
 
-res1 <- cor.mtest(M, conf.level = .95)
 
-p_values_corr <- as.data.frame(res1$p)
-low_CI_corr <- as.data.frame(res1$lowCI)
-upp_CI_corr <- as.data.frame(res1$uppCI)
+res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dflt as 2 taken out as duplicated (Room L04F)
+res1$ci
+
+write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
 corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "lt")
 
-write.table(res1$p, file = "p_values.txt", sep = ",", quote = FALSE, row.names = T)
 
 #Correlations with Actual PEB
 
 with(cs, cor.test(cs$'Political orientation', thermo_change_excdflt))
 with(cs, cor.test(cs$'AwarenessConsequences', thermo_change_excdflt))
+with(cs, corr.test(cs$'AwarenessConsequences', thermo_change_excdflt, adjust = "none"))
 with(cs, cor.test(cs$'AscriptionResponsibility', thermo_change_excdflt))
 with(cs, cor.test(NEP_mean, thermo_change_excdflt))
 with(cs, cor.test(EAI_mean, thermo_change_excdflt))
@@ -543,6 +549,42 @@ with(cs, cor.test(cs$thermo_moral_mean, thermo_change_excdflt))
 with(cs, cor.test(BSCS_mean, thermo_change_excdflt))
 with(cs, cor.test(MAC_mean, thermo_change_excdflt))
 with(cs, cor.test(MFT_mean, thermo_change_excdflt))
+
+#Calculate p-value differences between CADM and thermostat study for ACTUAL PEB
+#Note: r values are changed to negative from CADM to stay consist 
+#As thermo_change_excdflt = AFTER - BEFORE therefore the PEB is negative
+
+#Correlation Awareness of Consequences w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'AwarenessConsequences', cs$thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 13215, r34 = -.22), digits = 3)
+
+#Correlation Ascription of Responsibility w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'AscriptionResponsibility', thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 4217, r34 = -.10), digits = 3)
+
+#Correlation NEP w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(NEP_mean, thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 3499, r34 = -.09), digits = 3)
+
+#Correlation SocialNorm w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'SocialNorm', thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 14170, r34 = -.24), digits = 3)
+
+#Correlation Perceived Behavioural Control w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'PBC', thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 15020, r34 = -.40), digits = 3)
+
+#Correlation Habits w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'Habit', thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 7747, r34 = -.46), digits = 3)
+
+#Correlation Intentions w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(cs$'Intention', thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 12945, r34 = -.55), digits = 3)
+
+#Correlation Attitudes w. thermo_change_excdflt
+print(r.test(n = 86, r12 = (with(cs, cor(thermo_moral_mean, thermo_change_excdflt, 
+                                   use = "complete.obs"))), n2 = 14053, r34 = -.36), digits = 3)
 
 
 
@@ -598,6 +640,8 @@ irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14"
   labs(title = "Level of deference to default settings by room", x =
             "Proportion of observations at default", y = "Number of rooms")
 
+
+
 #Plot of %age of observations at default by room
 
 irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
@@ -630,7 +674,7 @@ irus_data %>%
 #Number of observations in the analysis date range @ default = 260,045
 irus_data %>% filter(Setpoint == 19 | Setpoint == 21) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
 +     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
-#Out of 368k = 73% @ default setting
+#Out of 355k = 73% @ default setting
 irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
 +     Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")))
 
@@ -781,6 +825,14 @@ tab_model(model_H4)
 plot_model(model_H4, type = c("std"))
 plot_model(model_H4, type = c("pred"), terms = c())
 
+
+#HYPOTHESIS 5
+
+
+
+
+
+
 #Match Room numbers to Time Series data
 #Show any duplicate room numbers - there is one duplicate in Crescent - Room L04F
 cs %>% group_by(Q4) %>% filter(n()>1) %>% select(Q4)
@@ -814,15 +866,19 @@ ggplot(cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = EAI_mean))
 #Plot of attitude to likelyPEB
 ggplot (cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = likelyPEB_mean))
 ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
-  x = thermo_moral_mean, y = EAI_mean), colour = "red") + geom_point(
-    mapping = aes(x = thermo_moral_mean, y = EAI_mean), colour = "red") + geom_smooth(
-    method = "lm", se = FALSE, mapping = aes(x = thermo_moral_mean, y = NEP_mean), colour = "blue") + 
-  geom_point(mapping = aes(x = thermo_moral_mean, y = NEP_mean), colour = "blue", shape = "triangle") +
-  labs(x = "Pro-environmental Attitude to Thermostat", y = "General Environmental Attitude Scale (Mean)") +
-  annotate(geom = "point", x = -1, y = 2.8, colour = "blue", shape = "triangle", size = 3) + 
-  annotate(geom = "text", x = -1, y = 2.8, label = " NEP", hjust = "left", size = 6) +
-  annotate(geom = "point", x = -1, y = 2.5, colour = "red", shape = "circle", size = 3) + 
-  annotate(geom = "text", x = -1, y = 2.5, label = " EAI", hjust = "left", size = 6)
+  x = thermo_moral_mean, y = EAI_mean), colour = "darkgoldenrod3") + geom_point(
+    mapping = aes(x = thermo_moral_mean, y = EAI_mean), colour = "darkgoldenrod3") +
+  geom_smooth(method = "lm", se = FALSE, mapping = aes(x = thermo_moral_mean, y = NEP_mean),
+              colour = "springgreen4") +   geom_point(mapping = aes(
+                x = thermo_moral_mean, y = NEP_mean), colour = "springgreen4", 
+                shape = "triangle") +  labs(x = "Pro-environmental Attitude to Thermostat",
+                                            y = "General Environmental Attitude Scale (Mean)") +
+  annotate(geom = "point", x = -1, y = 2.8, colour = "springgreen4", 
+           shape = "triangle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.8, label = "  NEP", hjust = "left", size = 4) +
+  annotate(geom = "point", x = -1, y = 2.5, colour = "darkgoldenrod3", 
+           shape = "circle", size = 3) + 
+  annotate(geom = "text", x = -1, y = 2.5, label = "  EAI", hjust = "left", size = 4)
 
 #Normal distribution tests
 #Q-Q plots
@@ -866,7 +922,7 @@ grid.arrange(plotA01A, plotA01B, plotA01C, plotA01D, plotA01E, plotA01F, nrow = 
 
 #Scatter plot of temp change before and after posters
 cs %>% ggplot() + geom_point(mapping = aes(x = site_room, y = thermo_change),
-  colour=ifelse((cs$thermo_change>0), "red", "green"), size = 4) + theme(
+  colour=ifelse((cs$thermo_change>0), "red", "blue"), size = 2) + theme(
     axis.text.x = element_text(angle = 90, size = 8))
 
 #Before and After Sub19 bar chart
