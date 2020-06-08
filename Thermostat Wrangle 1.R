@@ -640,7 +640,14 @@ irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14"
   labs(title = "Level of deference to default settings by room", x =
             "Proportion of observations at default", y = "Number of rooms")
 
-
+#Code to show that only 2 rooms stuck exclusively to default
+irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) | (
+ Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28"))) %>% 
+group_by(site_room) %>% 
+summarise(default = sum(Setpoint == 19 | Setpoint == 21), adjusted = sum(
+Setpoint != 19 & Setpoint != 21), total = sum(Setpoint > 0),
+'Below 19' = sum(Setpoint < 19 & Setpoint != 21), 'Above 19' = sum(Setpoint > 19  & Setpoint != 21)) %>%
+  filter(adjusted > 0)
 
 #Plot of %age of observations at default by room
 
@@ -655,7 +662,7 @@ irus_data %>%   filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-1
   mutate(site_room = fct_reorder(site_room, propn)) %>%
   ggplot () + geom_point(aes(x = site_room, y = propn), size = 0.75) + labs(
     title = "Thermostat settings 30th Jan 2020 - 1st March", 
-    y = "Proportion of observations at default") +
+    y = "Proportion of non-default observations") +
   geom_point(aes(x = site_room, y = Count/total, colour = Setting), size  = 2, alpha = 1/2) +
   scale_colour_manual(values=c("firebrick2", "royalblue3")) + theme(
     axis.text.x = element_blank(), axis.ticks.x=element_blank()) + xlab("Individual rooms") +
@@ -685,9 +692,11 @@ cs %>% filter(Q3 == "CRESCENT") %>%
 cs %>% filter(Q3 == "CRESCENT") %>%
   summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after))
 cs %>% filter(Q3 == "WARNEFORD") %>%
-  summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt))
+  summarise(before = mean(avg_sp_before_excdflt, na.rm = TRUE), after = mean(
+    avg_sp_after_excdflt, na.rm = TRUE))
 cs %>% filter(Q3 == "WARNEFORD") %>%
-  summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after))
+  summarise(before = mean(avg_setpoint_before, na.rm = TRUE), after = mean(
+    avg_setpoint_after, na.rm = TRUE))
 
 t_warneford <-  cs %>% filter(Q3 == "WARNEFORD") %>%
   select(avg_setpoint_before, avg_setpoint_after, avg_sp_before_excdflt, avg_sp_after_excdflt)
@@ -825,8 +834,6 @@ tab_model(model_H4)
 plot_model(model_H4, type = c("std"))
 plot_model(model_H4, type = c("pred"), terms = c())
 
-
-#HYPOTHESIS 5
 
 
 
