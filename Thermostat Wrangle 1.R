@@ -11,6 +11,7 @@ library(vroom)
 library(fasttime)
 library(sjPlot)
 library(naniar)
+library(nFactors)
 
 
 setwd("E:/R files")
@@ -179,6 +180,7 @@ irus_data$date_time <- fastPOSIXct(paste(irus_data$Date, irus_data$Time))
 irus_data$site_room <- as.factor(irus_data$site_room)
 
 #Add daily mean setpoint and daily average temperature into dataframe
+
 irus_data <- irus_data %>% group_by(site_room, Date) %>% 
   mutate(daily_mean_sp = mean(Setpoint, na.rm = TRUE),
          daily_airtemp = mean(`Temp Air`, na.rm = TRUE))
@@ -187,6 +189,12 @@ irus_data <- left_join(irus_data, irus_data %>%
                          group_by(site_room, Date) %>% 
                          filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
                          filter(Setpoint != 19) %>% mutate(daily_mean_sp_excdflt = mean(
+                           Setpoint, na.rm = TRUE)))
+
+irus_data <- left_join(irus_data, irus_data %>% 
+                         group_by(site_room) %>% 
+                         filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+                         filter(Setpoint != 19) %>% mutate(mean_sp_excdflt = mean(
                            Setpoint, na.rm = TRUE)))
 
 
@@ -227,6 +235,7 @@ irus_data <- irus_data %>% mutate (sub19_change = sub19_after - sub19_before)
 irus_data <- irus_data %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
 
 #Calculate number of settings below 19 degrees, before and after 14th Feb (posters date)
+
 #Add data from irus_data tibble to data-frame 'cs' (questionnaire data)
 
 cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
@@ -237,7 +246,7 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < a
   "2020-03-01")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
 
-cs <- left_join(cs, irus_data %>%
+cs <- left_join(cs, irus_data %>% 
     filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
     group_by(site_room) %>% 
     summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
@@ -259,6 +268,8 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
+cs <- cs %>% mutate(avg_sp_before_excdflt19 = avg_sp_before_excdflt - 19,
+                    avg_sp_after_excdflt19 = avg_sp_after_excdflt - 19)
 
 #Add change variable
 cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
@@ -363,13 +374,25 @@ lapply(cs[132:138], shapiro.test)
 mean(cs$Q34, na.rm = TRUE)
 describe(cs$Q34)
 
-#Factor Analysis
+
+
+
+
+
+#FACTOR ANALYSIS
+
+
+
+
+
+
 
 #FA of Attitudes scale
-cs %>% select('AwarenessConsequences':Q8_9) %>% cor() %>% fa.parallel(
+cs %>% select(Q8_7:Q8_9) %>% cor() %>% fa.parallel(
   n.obs=88, main = "Parallel Analysis scree plot - Attitude scale")
 
 #FA of likely PEB scale
+
 #Assumption tests: KMO and Barlett's sphericity
 cs %>% select(Q7_1:Q7_22) %>% cortest()
 cs %>% select(Q7_1:Q7_22) %>% KMO()
@@ -384,19 +407,29 @@ cs %>% select(Q7_1:Q7_22) %>% cor(
 #Assumption tests: KMO and Barlett's sphericity
 cs %>% select(Q9_1:Q9_7) %>% cortest()
 cs %>% select(Q9_1:Q9_7) %>% KMO()
-#Parallel analysis suggests 1 factors
-cs %>% select(Q9_1:Q9_7) %>% cor(
-  use = "complete.obs") %>% fa.parallel(
-    n.obs=88, main = "Parallel Analysis scree plot - Morality as Co-operation")
+
+mMAC <- cs %>% select(Q9_1:Q9_7)
+
+#Exact code replication from https://www.statmethods.net/advstats/factor.html
+ev <- eigen(cor(mMAC)) # get eigenvalues
+ap <- parallel(subject=nrow(mMAC),var=ncol(mMAC), rep=100,cent=.05)
+nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+plotnScree(nS)
+
+cs %>% select(Q9_1:Q9_7) %>% cor(use = "complete.obs") %>% fa()
 
 #FA of MFT scale
 #Assumption tests: KMO and Barlett's sphericity
 cs %>% select(Q10_1:Q10_7) %>% cortest()
 cs %>% select(Q10_1:Q10_7) %>% KMO()
 #Parallel analysis suggests 1 factors
-cs %>% select(Q10_1:Q10_7) %>% cor(
-  use = "complete.obs") %>% fa.parallel(
-    n.obs=88, main = "Parallel Analysis scree plot - Moral Foundations Theory")
+mMFT <- cs %>% select(Q10_1:Q10_7)
+
+#Exact code replication from https://www.statmethods.net/advstats/factor.html
+ev <- eigen(cor(mMFT)) # get eigenvalues
+ap <- parallel(subject=nrow(mMFT),var=ncol(mMFT), rep=100,cent=.05)
+nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+plotnScree(nS)
 
 #FA of BSCS scale
 #Assumption tests: KMO and Barlett's sphericity
@@ -535,6 +568,8 @@ corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "
 
 #Correlations with Actual PEB
 
+#Correlations With AFTER v BEFORE thermo setting (thermo_change_excdflt)
+
 with(cs, cor.test(cs$'Political orientation', thermo_change_excdflt))
 with(cs, cor.test(cs$'AwarenessConsequences', thermo_change_excdflt))
 with(cs, corr.test(cs$'AwarenessConsequences', thermo_change_excdflt, adjust = "none"))
@@ -551,7 +586,7 @@ with(cs, cor.test(MAC_mean, thermo_change_excdflt))
 with(cs, cor.test(MFT_mean, thermo_change_excdflt))
 
 #Calculate p-value differences between CADM and thermostat study for ACTUAL PEB
-#Note: r values are changed to negative from CADM to stay consist 
+#Note: r values are changed to negative from CADM to stay consistent
 #As thermo_change_excdflt = AFTER - BEFORE therefore the PEB is negative
 
 #Correlation Awareness of Consequences w. thermo_change_excdflt
@@ -777,10 +812,11 @@ model_H1a_prag <- lm(PEB_pragmatist_sz ~ AwarenessConsequences_sz + Habit_sz + S
 summary(model_H1a_prag)
 
 #Model H1b
-model_H1b <- lm(thermo_change_excdflt_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+model_H1b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
   AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
 summary(model_H1b)
 
+tab_model(model_H1b)
 tab_model(model_H1a, model_H1a_act, model_H1a_prag, model_H1b)
 
 #Model H1aD (CADM validation) likely_PEB w. DEMOGRAPHICS
@@ -789,12 +825,12 @@ model_H1aD <- lm(likelyPEB_mean_sz ~ Q3 + Q13 + Q34 + Q15 +
 summary(model_H1aD)
 
 #Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
-model_H1bD <- lm(thermo_change_excdflt_sz ~ Q3 + Q13 + Q34 + Q15 + 
+model_H1bD <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q3 + Q13 + Q34 + Q15 + 
   `Political orientation` + Q17, cs)
 summary(model_H1bD)
 
 plot_model(model_H1bD)
-
+tab_model(model_H1aD, model_H1bD)
 
 #HYPOTHESIS 2
 
@@ -805,14 +841,14 @@ summary(model_H2a)
 plot_model(model_H2a)
 
 #Model 2b: EAI v NEP - actual PEB
-model_H2b <- lm(thermo_change_excdflt_sz ~ EAI_mean_sz + NEP_mean_sz, cs)
+model_H2b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + EAI_mean_sz + NEP_mean_sz, cs)
 summary(model_H2b)
 
 tab_model(model_H2a, model_H2b)
 
 
 #HYPOTHESIS 3
-model_H3 <- lm(thermo_change_excdflt_sz ~ BSCS_mean_sz, cs)
+model_H3 <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + BSCS_mean_sz, cs)
 summary(model_H3)
 
 
@@ -820,14 +856,12 @@ summary(model_H3)
 
 H4 <- irus_data %>% 
   group_by(Name, Site) %>% 
-  summarise(room_before = mean(avg_setpoint_before, na.rm = TRUE), 
-            room_after = mean(avg_setpoint_after), external = mean(Ext_temp_celsius)) %>%
+  summarise(room_before = mean(avg_setpoint_before - 19, na.rm = TRUE), 
+            room_after = mean(avg_setpoint_after - 19), external = mean(Ext_temp_celsius)) %>%
   ungroup()
-H4 <- H4 %>% mutate(room_before_sz = as.numeric(scale(room_before)))
-H4 <- H4 %>% mutate(room_after_sz = as.numeric(scale(room_after)))
 H4 <- H4 %>% mutate(external_sz = as.numeric(scale(external)))
 
-model_H4 <- lm(room_after_sz ~ room_before_sz + Site + room_before_sz*Site + external_sz, H4)
+model_H4 <- lm(room_after ~ 1 + room_before + Site + room_before*Site + external_sz, H4)
 summary(model_H4)
 
 tab_model(model_H4)
