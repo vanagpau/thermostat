@@ -869,6 +869,20 @@ plot_model(model_H4, type = c("std"))
 plot_model(model_H4, type = c("pred"), terms = c())
 
 
+#HYPOTHESIS 6
+
+#Model H6
+model_H6 <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MAC_mean_sz + MFT_mean_sz, cs)
+model_H6a <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MAC_mean_sz + MAC_mean_sz*Q3, cs)
+model_H6b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MFT_mean_sz + MFT_mean_sz*Q3, cs)
+
+summary(model_H6)
+
+tab_model(model_H6)
+tab_model(model_H6, model_H6a, model_H6b)
 
 
 
@@ -906,11 +920,11 @@ ggplot(cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = EAI_mean))
 
 #Plot of attitude to likelyPEB
 ggplot (cs) + geom_smooth(mapping = aes(x = thermo_moral_mean, y = likelyPEB_mean))
-ggplot (cs) + geom_smooth(method = "lm", se = FALSE, mapping = aes(
-  x = thermo_moral_mean, y = EAI_mean), colour = "darkgoldenrod3") + geom_point(
+ggplot (cs) + geom_smooth(method = "lm", se = TRUE, mapping = aes(
+  x = thermo_moral_mean, y = EAI_mean), colour = "darkgoldenrod3", fill = "darkgoldenrod3") + geom_point(
     mapping = aes(x = thermo_moral_mean, y = EAI_mean), colour = "darkgoldenrod3") +
-  geom_smooth(method = "lm", se = FALSE, mapping = aes(x = thermo_moral_mean, y = NEP_mean),
-              colour = "springgreen4") +   geom_point(mapping = aes(
+  geom_smooth(method = "lm", se = TRUE, mapping = aes(x = thermo_moral_mean, y = NEP_mean),
+              colour = "springgreen4", fill = "springgreen4") +   geom_point(mapping = aes(
                 x = thermo_moral_mean, y = NEP_mean), colour = "springgreen4", 
                 shape = "triangle") +  labs(x = "Pro-environmental Attitude to Thermostat",
                                             y = "General Environmental Attitude Scale (Mean)") +
