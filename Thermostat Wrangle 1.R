@@ -871,20 +871,27 @@ plot_model(model_H4, type = c("pred"), terms = c())
 
 #HYPOTHESIS 6
 
-#Model H6
-model_H6 <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
-                 MAC_mean_sz + MFT_mean_sz, cs)
+#MAC
+
 model_H6a <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
-                 MAC_mean_sz + MAC_mean_sz*Q3, cs)
+                 Q3, cs)
 model_H6b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MAC_mean_sz + Q3, cs)
+model_H6c <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MAC_mean_sz + MAC_mean_sz*Q3, cs)
+
+tab_model(model_H6a, model_H6b, model_H6c)
+
+#MFT
+
+model_H6d <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 Q3, cs)
+model_H6e <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
+                 MFT_mean_sz + Q3, cs)
+model_H6f <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + 
                  MFT_mean_sz + MFT_mean_sz*Q3, cs)
 
-summary(model_H6)
-
-tab_model(model_H6)
-tab_model(model_H6, model_H6a, model_H6b)
-
-
+tab_model(model_H6d, model_H6e, model_H6f)
 
 
 
