@@ -1103,3 +1103,6 @@ cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
 
 
 
+irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% filter(Setpoint != 19) %>% group_by(Date) %>% summarise(number = sum(Setpoint)) %>% ggplot(aes(x = Date, y = number)) + geom_point() + geom_ma() + theme(
++       axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day")
+
