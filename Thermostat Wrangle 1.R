@@ -15,6 +15,7 @@ library(nFactors)
 library(TTR)
 library(tidyquant)
 
+
 setwd("E:/R files")
 #For Laptop work setwd("/home/vanagpau/R/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
@@ -1102,7 +1103,14 @@ cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
        y = "Measured change in thermostat setting (celsius)")
 
 
+#Plot moving averages of non-default settings
 
-irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% filter(Setpoint != 19) %>% group_by(Date) %>% summarise(number = sum(Setpoint)) %>% ggplot(aes(x = Date, y = number)) + geom_point() + geom_ma() + theme(
-+       axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day")
+irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+  filter(Setpoint != 19) %>% group_by(Date) %>%
+  summarise(number = sum(Setpoint)) %>%
+  ggplot(aes(x = Date, y = number)) + geom_point() + theme(
+    axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day") +
+  geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
+  geom_hline(aes(yintercept = 70000), colour = "black")
+
 
