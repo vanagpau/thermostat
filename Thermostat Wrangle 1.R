@@ -137,6 +137,11 @@ cs <- cs %>% rename('AwarenessConsequences' = Q8_1)
 cs <- cs %>% rename('Intention' = Q8_6)
 cs <- cs %>% rename('AscriptionResponsibility' = Q8_4)
 
+#Replace 0's with NA in Age
+cs$Q34[cs$Q34 == 0] <- NA
+
+#Centre Age
+cs$Q34 <- cs$Q34 - mean(cs$Q34, na.rm = TRUE)
 
 #LOAD IN THE THERMOSTAT DATA
 
@@ -327,6 +332,7 @@ cs <- cs %>% mutate(SocialNorm_sz = as.numeric(scale(SocialNorm)))
 cs <- cs %>% mutate(AscriptionResponsibility_sz = as.numeric(scale(AscriptionResponsibility)))
 cs <- cs %>% mutate(PBC_sz = as.numeric(scale(PBC)))
 cs <- cs %>% mutate(BSCS_mean_sz = as.numeric(scale(BSCS_mean)))
+cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orientation`)))
 
 
 
@@ -772,64 +778,100 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 #REGRESSION MODELLING
 
-# #Model H1a (CADM validation) - PV version
-# form_H1a <- likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
-#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean
-# std_model_H1a <- standardize(form_H1a, cs)
-# model_H1a <- lm(std_model_H1a$formula, std_model_H1a$data)
-# summary(model_H1a)
-# 
-# #Model H1a (CADM validation) - removed formula line
-# std_model_H1a <- standardize(likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
-#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean, cs)
-# model_H1a <- lm(likelyPEB_mean ~ `AwarenessConsequences` + `Habit` + `SocialNorm` + 
-#   `AscriptionResponsibility` + `PBC` + `Intention` + NEP_mean, std_model_H1a$data)
-# summary(model_H1a)
-# 
-# #Gives error - "Error: variables xx were specified with different types from the fit"
-# Using scale or standardize creates something which sjPlot can't use for some reason
-# plot_model(model_H1a, type = c("pred"), terms = c())
-# But this works.. Yippeeeeee!!!!!!!!!!
-
-#Model H1a (CADM validation) - removed formula line + manual standardisation
-model_H1a <- lm(likelyPEB_mean_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
-  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
+#Model H1a (CADM validation)
+model_H1a <- lm(likelyPEB_mean_sz ~ (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + 
+    thermo_moral_mean_sz), cs)
 summary(model_H1a)
-model_H1a
 
-plot_model(model_H1a, type = c("pred"), terms = c())
+
+model_H1a_2way <- lm(likelyPEB_mean_sz ~ (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + 
+    thermo_moral_mean_sz)^2, cs)
+summary(model_H1a_2way)
+
+plot(model_H1a)
 plot_model(model_H1a, type = c("std"))
+plot_model(model_H1a_2way)
 
 #Model H1a_act (Activist sub-score)
 model_H1a_act <- lm(PEB_activist_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
-  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + thermo_moral_mean_sz, cs)
 summary(model_H1a_act)
 
+model_H1a_act_2way <- lm(PEB_activist_sz ~ (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + thermo_moral_mean_sz)^2, cs)
+summary(model_H1a_act_2way)
+
+plot_model(model_H1a_act)
+plot_model(model_H1a_act_2way)
 
 #Model H1a_prag (Pragmatist sub-score)
 model_H1a_prag <- lm(PEB_pragmatist_sz ~ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
-  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + thermo_moral_mean_sz, cs)
 summary(model_H1a_prag)
+
+model_H1a_prag_2way <- lm(PEB_pragmatist_sz ~ (
+  AwarenessConsequences_sz + Habit_sz + SocialNorm_sz +   AscriptionResponsibility_sz +
+    PBC_sz + Intention_sz + NEP_mean_sz + thermo_moral_mean_sz)^2, cs)
+summary(model_H1a_prag_2way)
+
+tab_model(model_H1a, model_H1a_prag, model_H1a_act)
+tab_model(model_H1a_2way, model_H1a_act_2way, model_H1a_prag_2way)
+
+
+
 
 #Model H1b
 model_H1b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
-  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz, cs)
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz  + thermo_moral_mean_sz, cs)
 summary(model_H1b)
 
 tab_model(model_H1b)
 tab_model(model_H1a, model_H1a_act, model_H1a_prag, model_H1b)
 
+#Model H1bB = all predictors predicting actual temp BEFORE
+model_H1bB <- lm(avg_sp_before_excdflt19 ~ 1 + AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz  + thermo_moral_mean_sz, cs)
+summary(model_H1bB)
+
+tab_model(model_H1bB)
+
+#Model H1bA = all predictors predicting actual temp AFTER
+model_H1bA <- lm(avg_sp_after_excdflt19 ~ 1 + AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz  + thermo_moral_mean_sz, cs)
+summary(model_H1bA)
+
+tab_model(model_H1bA, model_H1bB)
+
+#Model H1b_diff = all predictors predicting DIFFERENCE in temp
+model_H1b_diff <- lm(thermo_change_excdflt ~ 1+ AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz  + thermo_moral_mean_sz, cs)
+summary(model_H1b_diff)
+
+tab_model(model_H1b_diff)
+
+tab_model(model_H1bA, model_H1bB, model_H1b_diff)
+
+
+#Model H1b_diff_2way = all predictors predicting DIFFERENCE in temp
+model_H1b_diff_2way <- lm(thermo_change_excdflt ~ 1 + (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
+  AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz  + thermo_moral_mean_sz)^2, cs)
+summary(model_H1b_diff_2way)
+
+tab_model(model_H1b_diff_2way)
+
 #Model H1aD (CADM validation) likely_PEB w. DEMOGRAPHICS
-model_H1aD <- lm(likelyPEB_mean_sz ~ Q3 + Q13 + Q34 + Q15 +
-                   `Political orientation` + Q17, cs)
+model_H1aD <- lm(likelyPEB_mean_sz ~ Q13 + Q34 +
+                   PoliticalOrientation_sz + Q17, cs)
 summary(model_H1aD)
 
 #Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
-model_H1bD <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q3 + Q13 + Q34 + Q15 + 
-  `Political orientation` + Q17, cs)
+model_H1bD <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q13 + Q34 + 
+  PoliticalOrientation_sz + Q17, cs)
 summary(model_H1bD)
 
-plot_model(model_H1bD)
+plot_model(model_H1bD, type = "pred")
 tab_model(model_H1aD, model_H1bD)
 
 #HYPOTHESIS 2
@@ -841,11 +883,12 @@ summary(model_H2a)
 plot_model(model_H2a)
 
 #Model 2b: EAI v NEP - actual PEB
-model_H2b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + EAI_mean_sz + NEP_mean_sz, cs)
+model_H2b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + EAI_mean_sz
+                + NEP_mean_sz, cs)
 summary(model_H2b)
 
 tab_model(model_H2a, model_H2b)
-
+plot_model(model_H2b, type = "pred")
 
 #HYPOTHESIS 3
 model_H3 <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + BSCS_mean_sz, cs)
@@ -1051,4 +1094,11 @@ irus_data %>%
   scale_color_manual(values = c(
     "External" = "royalblue3", "Thermostat" = "black", "Thermostat_exc_dflt" = "red"))
   
+#Plot intention versus actual behaviour
+cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Relationship of thermostat change to intention", x = "Agreement with statement 'I fully intend to use my thermostat control \n to minimise energy usage in the future' (7 point scale)",
+       y = "Measured change in thermostat setting (celsius)")
+
+
 
