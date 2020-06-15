@@ -12,7 +12,8 @@ library(fasttime)
 library(sjPlot)
 library(naniar)
 library(nFactors)
-
+library(TTR)
+library(tidyquant)
 
 setwd("E:/R files")
 #For Laptop work setwd("/home/vanagpau/R/thermostat")
