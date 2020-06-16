@@ -222,6 +222,30 @@ irus_data <- irus_data %>% mutate (sub19_before = ifelse(Date > as.Date(
 irus_data <- irus_data %>% mutate (sub19_after = ifelse(Date > as.Date(
   "2020-02-14") & Date < as.Date("2020-03-01") & Setpoint <19, Setpoint, NA))
 
+#Add before and after settings +/- 3 days and +/- 7 days INC defaults
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter (Date > as.Date("2020-02-10") & Date < as.Date(  "2020-02-14")) %>% 
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_before3 = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>%
+ filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-18")) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_after3 = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter (Date > as.Date("2020-02-06") & Date < as.Date(  "2020-02-14")) %>% 
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_before7 = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>%
+ filter (Date > as.Date("2020-02-14") & Date < as.Date("2020-02-22")) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_after7 = mean(Setpoint)), by = "site_room")
+
+
+
 
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -236,6 +260,41 @@ irus_data <- left_join (irus_data, irus_data %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
+
+#Add 3 day exc defaults measure
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-10") & Date < as.Date("2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt3 = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-18")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt3 = mean(Setpoint)), by = "site_room")
+
+#Add 7 day exc defaults measure
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-06") & Date < as.Date("2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt7 = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-22")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt7 = mean(Setpoint)), by = "site_room")
+
+
+
+
+
 
 irus_data <- irus_data %>% mutate (thermo_change = avg_setpoint_after - avg_setpoint_before)
 irus_data <- irus_data %>% mutate (sub19_change = sub19_after - sub19_before)
@@ -253,6 +312,7 @@ cs <- left_join(cs, irus_data %>% filter(Date > as.Date("2020-02-14") & Date < a
   "2020-03-01")) %>% filter(Setpoint<19) %>% group_by(site_room) %>% count(
     name = "sub19_after"), by = "site_room") %>% mutate_all(~replace(., is.na(.), 0))
 
+#Add thermostat data inc defaults
 cs <- left_join(cs, irus_data %>% 
     filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
     group_by(site_room) %>% 
@@ -263,6 +323,8 @@ cs <- left_join(cs, irus_data %>%
                   group_by(site_room) %>%
                   summarise(avg_setpoint_after = mean(Setpoint)), by = "site_room")
 
+
+#Add thermostat data exc defaults
 cs <- left_join (cs, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
@@ -277,6 +339,75 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
 
 cs <- cs %>% mutate(avg_sp_before_excdflt19 = avg_sp_before_excdflt - 19,
                     avg_sp_after_excdflt19 = avg_sp_after_excdflt - 19)
+
+#Add data at 3 days and 7 days
+
+cs <- left_join (cs, irus_data %>% 
+  filter (Date > as.Date("2020-02-10") & Date < as.Date(  "2020-02-14")) %>% 
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_before3 = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>%
+ filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-18")) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_after3 = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter (Date > as.Date("2020-02-06") & Date < as.Date(  "2020-02-14")) %>% 
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_before7 = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>%
+ filter (Date > as.Date("2020-02-14") & Date < as.Date("2020-02-22")) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_after7 = mean(Setpoint)), by = "site_room")
+
+mean(cs$avg_setpoint_before3, na.rm = TRUE)
+mean(cs$avg_setpoint_after3, na.rm = TRUE)
+mean(cs$avg_setpoint_before7, na.rm = TRUE)
+mean(cs$avg_setpoint_after7, na.rm = TRUE)
+
+t.test(cs$avg_setpoint_after3, cs$avg_setpoint_before3, paired = TRUE)
+
+
+#Add 3 day exc defaults measure to df cs
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-10") & Date < as.Date("2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt3 = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-18")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt3 = mean(Setpoint)), by = "site_room")
+
+mean(cs$avg_sp_before_excdflt3, na.rm = TRUE)
+mean(cs$avg_sp_after_excdflt3, na.rm = TRUE)
+t.test(cs$avg_sp_before_excdflt3, cs$avg_sp_after_excdflt3, paired = TRUE)
+
+#Add 7 day exc defaults measure to df cs
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-06") & Date < as.Date("2020-02-14")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflt7 = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-02-22")) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdflt7 = mean(Setpoint)), by = "site_room")
+
+mean(cs$avg_sp_before_excdflt7, na.rm = TRUE)
+mean(cs$avg_sp_after_excdflt7, na.rm = TRUE)
+t.test(cs$avg_sp_before_excdflt7, cs$avg_sp_after_excdflt7, paired = TRUE)
+
 
 #Add change variable
 cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
@@ -677,6 +808,10 @@ cs %>% ggplot(aes(x = avg_setpoint_before, y = avg_setpoint_after)) + geom_point
 #No link between activist setpoint after, some link between pragmatist
 cs %>% ggplot(aes(x = PEB_activist, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
 cs %>% ggplot(aes(x = PEB_pragmatist, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
+cs %>% ggplot(aes(x = PEB_pragmatist, y = thermo_change)) + geom_point() + geom_smooth(method = "lm")
+cs %>% ggplot(aes(x = PEB_activist, y = thermo_change)) + geom_point() + geom_smooth(method = "lm")
+
+
 
 #Link between attitudes and thermo setting actual before AND after ie. no change
 cs %>% ggplot(aes(x = thermo_moral_mean, y = avg_setpoint_before)) + geom_point() + geom_smooth(method = "lm")
@@ -1141,7 +1276,7 @@ cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
        y = "Measured change in thermostat setting (celsius)")
 
 
-#Plot moving averages of non-default settings: can't plot vline ??
+#Plot moving averages of non-default settings: 
 
 irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
   filter(Setpoint != 19) %>% group_by(Date) %>%
