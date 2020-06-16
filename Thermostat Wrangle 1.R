@@ -418,7 +418,7 @@ cs %>% select(Q9_1:Q9_7) %>% KMO()
 
 mMAC <- cs %>% select(Q9_1:Q9_7)
 
-#Exact code replication from https://www.statmethods.net/advstats/factor.html
+#Code from https://www.statmethods.net/advstats/factor.html
 ev <- eigen(cor(mMAC)) # get eigenvalues
 ap <- parallel(subject=nrow(mMAC),var=ncol(mMAC), rep=100,cent=.05)
 nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
@@ -433,7 +433,7 @@ cs %>% select(Q10_1:Q10_7) %>% KMO()
 #Parallel analysis suggests 1 factors
 mMFT <- cs %>% select(Q10_1:Q10_7)
 
-#Exact code replication from https://www.statmethods.net/advstats/factor.html
+#Code from https://www.statmethods.net/advstats/factor.html
 ev <- eigen(cor(mMFT)) # get eigenvalues
 ap <- parallel(subject=nrow(mMFT),var=ncol(mMFT), rep=100,cent=.05)
 nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
@@ -553,7 +553,19 @@ with(cs, cor.test(MFT_mean, PEB_pragmatist))
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 #M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
 
-M <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+M_exc <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
+
+M <- cs %>% select(thermo_change, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
+
+M19 <- cs %>% select(sub19_change, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
+
+M_ba <- cs %>% select(avg_setpoint_before, avg_setpoint_after, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
               MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
 
@@ -563,7 +575,7 @@ M_full <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPE
 
 print(M_full, short = FALSE)
 
-corrplot(M, method = "number", type = "lower", order = "AOE")
+corrplot(M_ba, method = "number", type = "lower", order = "AOE")
 
 
 res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dflt as 2 taken out as duplicated (Room L04F)
@@ -649,6 +661,29 @@ mean(irus_data$avg_sp_after_excdflt, na.rm = TRUE)
 t_excdflt <- irus_data %>% group_by(site_room) %>%
   summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
 t.test(t_excdflt$after,t_excdflt$before, paired=TRUE)
+
+#Equivalent calculations for SURVEY dataset
+shapiro.test(cs$thermo_change)
+shapiro.test(cs$thermo_change_excdflt)
+mean(cs$thermo_change, na.rm = TRUE)
+mean(cs$thermo_change_excdflt, na.rm = TRUE)
+t.test(cs$avg_setpoint_after, cs$avg_setpoint_before, paired = TRUE)
+t.test(cs$avg_sp_after_excdflt, cs$avg_sp_before_excdflt, paired = TRUE)
+
+#Plot of survey data setpoints before and after
+
+cs %>% ggplot(aes(x = avg_setpoint_before, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
+
+#No link between activist setpoint after, some link between pragmatist
+cs %>% ggplot(aes(x = PEB_activist, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
+cs %>% ggplot(aes(x = PEB_pragmatist, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
+
+#Link between attitudes and thermo setting actual before AND after ie. no change
+cs %>% ggplot(aes(x = thermo_moral_mean, y = avg_setpoint_before)) + geom_point() + geom_smooth(method = "lm")
+cs %>% ggplot(aes(x = thermo_moral_mean, y = avg_setpoint_after)) + geom_point() + geom_smooth(method = "lm")
+corr.test(cs$thermo_moral_mean, cs$avg_setpoint_before, use = "pairwise") # =-0.34
+corr.test(cs$thermo_moral_mean, cs$avg_setpoint_after, use = "pairwise") # =-0.35
+
 
 #Mean external temp before (6.9 celsius) and after (7.0) comms
 irus_data %>% ungroup() %>%
@@ -907,11 +942,14 @@ H4 <- irus_data %>%
 H4 <- H4 %>% mutate(external_sz = as.numeric(scale(external)))
 
 model_H4 <- lm(room_after ~ 1 + room_before + Site + room_before*Site + external_sz, H4)
+model_H4a <- lm((room_after - room_before) ~ 1 + Site + external_sz, H4)
+
 summary(model_H4)
+summary(model_H4a)
 
 tab_model(model_H4)
-plot_model(model_H4, type = c("std"))
-plot_model(model_H4, type = c("pred"), terms = c())
+plot_model(model_H4, type = c("int"))
+plot_model(model_H4a, type = c("int"))
 
 
 #HYPOTHESIS 6
@@ -1103,7 +1141,7 @@ cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
        y = "Measured change in thermostat setting (celsius)")
 
 
-#Plot moving averages of non-default settings
+#Plot moving averages of non-default settings: can't plot vline ??
 
 irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
   filter(Setpoint != 19) %>% group_by(Date) %>%
@@ -1111,6 +1149,6 @@ irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <
   ggplot(aes(x = Date, y = number)) + geom_point() + theme(
     axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day") +
   geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
-  geom_hline(aes(yintercept = 70000), colour = "black")
+  geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31"))))
 
 
