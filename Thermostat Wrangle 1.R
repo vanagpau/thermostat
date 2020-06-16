@@ -1286,4 +1286,34 @@ irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <
   geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
   geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31"))))
 
+#Average thermo setting of survey participants
+irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
+  group_by(date_time) %>%
+  summarise(mean = mean(Setpoint), ext = mean(Ext_temp_celsius)) %>%
+  ggplot(aes(x = date_time, y = mean)) + geom_line() + geom_ma(n=24) + geom_point(aes(x = date_time, y = ext))
 
+#rank mean temp setting
+irus_data %>% filter(site_room %in% c(cs$site_room)) %>% group_by(site_room, date_time) %>% summarise(temp = Setpoint) %>%
+  mutate(site_room = fct_reorder(site_room, temp)) %>% 
+ ggplot() + geom_col(mapping = aes(x = site_room, y = Setpoint))
+
+#trying to work out what's driving the spikes..
+hold <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
+  group_by(date_time, site_room) %>%
+  summarise(temp = Setpoint)
+hold_excdflt <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
+                         filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+                         filter(Setpoint != 19) %>%
+  group_by(date_time, site_room) %>%
+  summarise(temp = Setpoint)
+
+hold_excdflt
+hold %>% filter(temp > 23) %>% summarise(temp = mean(temp))
+hold %>% filter(temp > 23) %>% arrange(desc(date_time)) 
+hold %>% arrange(desc(date_time)) 
+
+#peaks on 7th Feb, 13th Feb (before), and double peaks 20th/21st Feb and 29th Feb/1st March (after)
+
+hold %>% ggplot() + geom_histogram(aes(temp), binwidth = .1) + ylim(0,75000)
+hold_excdflt %>% ggplot() + geom_histogram(aes(temp), binwidth = .1)
+hold %>% ggplot() + geom_boxplot(aes(temp))
