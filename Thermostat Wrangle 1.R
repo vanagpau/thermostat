@@ -1286,14 +1286,54 @@ irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <
   geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
   geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31"))))
 
+#TWIN PEAKS
+
+
+
 #Average thermo setting of survey participants
 irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
   group_by(date_time) %>%
   summarise(mean = mean(Setpoint), ext = mean(Ext_temp_celsius)) %>%
   ggplot(aes(x = date_time, y = mean)) + geom_line() + geom_ma(n=24) + geom_point(aes(x = date_time, y = ext))
 
+#apply to all irus_data = same artefacts - room temp v thermostat setting
+irus_data %>% 
+  group_by(date_time) %>%
+  summarise(mean = mean(Setpoint, na.rm = TRUE), ext = mean(Ext_temp_celsius), roomtemp = mean(`Temp Air`)) %>%
+  ggplot(aes(x = date_time)) + geom_line(aes(x = date_time, y = mean, colour = "Thermostat setting")) + geom_ma(aes(y = mean), n=24) +
+  geom_line(aes(y = roomtemp, colour = "Room temperature")) + geom_ma(aes(y = roomtemp), n=24)
+
+irus_data %>% 
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  filter(temp > 23) %>% summarise(temp = mean(temp, na.rm = TRUE)) %>%
+  arrange(desc(temp)) %>% print(n=40)
+
+#room temp does not follow high thermo settings!
+irus_data %>% 
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint, roomtemp = `Temp Air`) %>%  filter(temp > 25)
+
+
+irus_data %>% 
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
+  arrange(desc(temp)) %>% print(n=40)
+
+irus_data %>% group_by(site_room, date_time) %>%
+  summarise(temp = Setpoint) %>%  
+  filter(temp > 25) %>% 
+  count(site_room) %>% arrange(desc(n))
+
+irus_data %>% group_by(site_room, date_time) %>%
+  filter(Setpoint > 23) %>% 
+  summarise(temp = Setpoint)  %>%
+  count(site_room) %>%
+  arrange(desc(n))
+
+
 #rank mean temp setting
-irus_data %>% filter(site_room %in% c(cs$site_room)) %>% group_by(site_room, date_time) %>% summarise(temp = Setpoint) %>%
+irus_data %>% filter(site_room %in% c(cs$site_room)) %>% group_by(site_room, date_time) %>%
+  summarise(temp = Setpoint) %>%
   mutate(site_room = fct_reorder(site_room, temp)) %>% 
  ggplot() + geom_col(mapping = aes(x = site_room, y = Setpoint))
 
@@ -1301,11 +1341,13 @@ irus_data %>% filter(site_room %in% c(cs$site_room)) %>% group_by(site_room, dat
 hold <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
   group_by(date_time, site_room) %>%
   summarise(temp = Setpoint)
+
 hold_excdflt <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
                          filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
                          filter(Setpoint != 19) %>%
   group_by(date_time, site_room) %>%
   summarise(temp = Setpoint)
+
 
 hold_excdflt
 hold %>% filter(temp > 23) %>% summarise(temp = mean(temp))
@@ -1317,3 +1359,43 @@ hold %>% arrange(desc(date_time))
 hold %>% ggplot() + geom_histogram(aes(temp), binwidth = .1) + ylim(0,75000)
 hold_excdflt %>% ggplot() + geom_histogram(aes(temp), binwidth = .1)
 hold %>% ggplot() + geom_boxplot(aes(temp))
+
+#Test some outcomes using A. cleaned thermostat data
+
+#Clean thermostat data
+#Define "spikes" as date_time points where mean > 20 removes 11 data points from 1,296
+irus_data %>% 
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
+  arrange(desc(temp)) %>% print(n=40)
+
+#Within 2 weeks before and after, this equates to.. 6 data points
+irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
+  arrange(desc(temp)) %>% filter (temp > 20)
+
+exclude <- irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
+  arrange(desc(temp)) %>% filter (temp > 20) %>% pull(date_time)
+
+# ifelse(irus_data $date_time %in% "exclude", 0, 1)
+irus_data <- irus_data %>% ungroup() %>% mutate(exclude = (ifelse(irus_data$date_time %in% exclude, 0, 1)) )
+
+ #   date_time            temp
+ #   <dttm>              <dbl>
+ # 1 2020-02-20 18:00:00  24.5
+ # 2 2020-02-29 19:00:00  22.2
+ # 3 2020-02-21 00:00:00  22.2
+ # 4 2020-02-07 09:00:00  22.0
+ # 5 2020-02-13 00:00:00  21.9
+ # 6 2020-02-07 10:00:00  20.4
+ 
+
+ irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+ (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+ group_by(date_time ,site_room ) %>%  summarise(temp = mean(Setpoint))
+
