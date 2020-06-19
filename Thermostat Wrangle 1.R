@@ -84,9 +84,6 @@ cs[c(31,33,35,36,39,41,43,44,46,48,51,53)] <- lapply (
 cs[c(100,101,102,103,105,107,108,110,111)] <- lapply (
   cs[c(100,101,102,103,105,107,108,110,111)], reverse5)
 
-#Calculate all mean averages for EAI
-means_EAI <- lapply(EAI, mean, na.rm = TRUE)
-
 #Compute sub-scale scores for EAI
 cs <- cs %>% rowwise() %>% mutate(
 EAI1 = mean(c(Q6_1, Q6_2), na.rm = TRUE),
@@ -152,8 +149,19 @@ cs$Q34 <- cs$Q34 - mean(cs$Q34, na.rm = TRUE)
 #                                col_select = c(1:6), col_names = c(
 #                                 "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
 # big_warneford <- vroom ("FilteredLog_WARNEFORD.csv",
-#                                col_select = c(1:6), col_names = c(
-#                                  "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+                                # col_select = c(1:6), col_names = c(
+                                #   "Time stamp", "Node", "Unix time", "Status flag", "Set point", "Air temp"))
+#extract a sample for testing/manipulation
+# sample1000 <- sample_n(big_warneford, 1000)
+# sample1000$`Time stamp` <- as.POSIXct(bigWsample$`Time stamp`, format = '%d/%m/%Y-%H:%M:%S')
+# sample1000
+
+# big_warneford$`Time stamp` <- as.POSIXct(big_warneford$`Time stamp`, format = '%d/%m/%Y-%H:%M:%S')
+# big_warneford
+# #extract a specific set for comparison with IRUS
+# test29feb <- big_warneford %>% filter(`Time stamp` > "2020-02-29 17:00:00" & `Time stamp` < 
+#                                         "2020-02-29 20:00:00", Node == 111)
+# test29feb
 
 #Read in the Irus data (hourly, without interactions)
 irus_data <- vroom("IrusData - Energy data Crescent and Warneford.csv",
@@ -171,7 +179,6 @@ external_temp <- tibble(fread("Oxford temp data.csv") %>%
   rename(Ext_temp_celsius = `Temp 2m [C]`) %>%
   select(Date, Ext_temp_celsius))
 external_temp$Date <- as.Date(external_temp$Date, "%d/%m/%Y")
-str(external_temp)
 
 irus_data <- left_join(irus_data, external_temp, by = "Date")
 
@@ -204,6 +211,26 @@ irus_data <- left_join(irus_data, irus_data %>%
                          filter(Setpoint != 19) %>% mutate(mean_sp_excdflt = mean(
                            Setpoint, na.rm = TRUE)))
 
+#HYPOTHESIS 4 - add Before & After tags
+
+irus_data$intervention <- NA
+attach(irus_data)
+irus_data$intervention[Date < as.Date("2020-02-14")] <- "Before"
+irus_data$intervention[Date > as.Date("2020-02-14")] <- "After"
+irus_data
+detach(irus_data)
+
+#Add EXCLUDE filter for peaks
+exclude <- irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  group_by(date_time ,site_room ) %>%
+  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
+  arrange(desc(temp)) %>% filter (temp > 20) %>% pull(date_time)
+
+# Add flag to Irus and CS dataframes 
+irus_data <- irus_data %>% ungroup() %>% mutate(exclude = (ifelse(irus_data$date_time %in% exclude, 0, 1)))
+
+
 
 #Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -215,6 +242,21 @@ irus_data <- left_join (irus_data, irus_data %>%
  filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
    group_by(site_room) %>%
    summarise(avg_setpoint_after = mean(Setpoint)), by = "site_room")
+
+#Calculate with cleaned data - exclude peaks
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% filter (exclude == 1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_setpoint_beforeCL = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>%
+ filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% filter (exclude == 1) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpoint_afterCL = mean(Setpoint)), by = "site_room")
+
+mean(irus_data$avg_setpoint_beforeCL, na.rm = TRUE)
+mean(irus_data$avg_setpoint_afterCL, na.rm = TRUE)
+t.test(irus_data$avg_setpoint_afterCL, irus_data$avg_setpoint_beforeCL, paired = TRUE)
 
 irus_data <- irus_data %>% mutate (sub19_before = ifelse(Date > as.Date(
   "2020-01-30") & Date < as.Date("2020-02-14") & Setpoint <19, Setpoint, NA))
@@ -260,6 +302,27 @@ irus_data <- left_join (irus_data, irus_data %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
+
+
+#Add exc defaults, exc peaks data
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% filter(exclude == 1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdfltCL = mean(Setpoint)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% 
+  filter(exclude == 1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
+
+t.test(irus_data$avg_sp_after_excdfltCL, irus_data$avg_sp_before_excdfltCL, paired = TRUE )
+
+
+
 
 #Add 3 day exc defaults measure
 
@@ -324,6 +387,20 @@ cs <- left_join(cs, irus_data %>%
                   summarise(avg_setpoint_after = mean(Setpoint)), by = "site_room")
 
 
+cs <- left_join(cs, irus_data %>% 
+    filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% filter(exclude == 1) %>%
+    group_by(site_room) %>% 
+    summarise(avg_setpoint_beforeCL = mean(Setpoint)), by = "site_room")
+
+cs <- left_join(cs, irus_data %>% 
+                  filter(Date > as.Date("2020-02-14") & Date < as.Date(  "2020-03-01")) %>% filter(exclude == 1) %>%
+                  group_by(site_room) %>%
+                  summarise(avg_setpoint_afterCL = mean(Setpoint)), by = "site_room")
+
+mean(cs$avg_setpoint_afterCL, na.rm = TRUE)
+mean(cs$avg_setpoint_beforeCL, na.rm = TRUE)
+t.test(cs$avg_setpoint_afterCL, cs$avg_setpoint_beforeCL, paired = TRUE)
+
 #Add thermostat data exc defaults
 cs <- left_join (cs, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
@@ -339,6 +416,23 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
 
 cs <- cs %>% mutate(avg_sp_before_excdflt19 = avg_sp_before_excdflt - 19,
                     avg_sp_after_excdflt19 = avg_sp_after_excdflt - 19)
+
+#Add data exc dflt & exc peaks (cleaned)
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
+  filter(exclude == 1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_before_excdflCL = mean(Setpoint)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
+  filter(exclude ==1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
+
+t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdflCL, paired = TRUE)
 
 #Add data at 3 days and 7 days
 
@@ -425,16 +519,7 @@ cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_befor
 #                      c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
 #                       by = "site_room")
 
-#HYPOTHESIS 4 - add Before & After tags
 
-irus_data$communications <- 0
-irus_data$communications <- NA
-attach(irus_data)
-irus_data$communications[Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")] <-
-  "Before"
-irus_data$communications[Date > as.Date("2020-02-14") & Date < as.Date("2020-02-28")] <- 
-  "After"
-detach(irus_data)
 
 #Remove actual (Irus) data from duplicate room L04F - replace with NAs
 cs[(which(grepl("L04F", cs$Q4))),(match("sub19_before",names(cs))):(
@@ -1072,19 +1157,21 @@ summary(model_H3)
 H4 <- irus_data %>% 
   group_by(Name, Site) %>% 
   summarise(room_before = mean(avg_setpoint_before - 19, na.rm = TRUE), 
-            room_after = mean(avg_setpoint_after - 19), external = mean(Ext_temp_celsius)) %>%
-  ungroup()
+            room_after = mean(avg_setpoint_after - 19), external = mean(Ext_temp_celsius)) %>%  ungroup()
 H4 <- H4 %>% mutate(external_sz = as.numeric(scale(external)))
 
 model_H4 <- lm(room_after ~ 1 + room_before + Site + room_before*Site + external_sz, H4)
-model_H4a <- lm((room_after - room_before) ~ 1 + Site + external_sz, H4)
+
 
 summary(model_H4)
-summary(model_H4a)
+
 
 tab_model(model_H4)
 plot_model(model_H4, type = c("int"))
-plot_model(model_H4a, type = c("int"))
+
+H4cs <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter(exclude == 1)
+H4cs <- H4cs %>% mutate(external_sz = as.numeric(scale(Ext_temp_celsius)))
+model_H4cs <- lm(Setpoint ~ 1 + Setpoint + intervention + external_sz, H4cs)
 
 
 #HYPOTHESIS 6
@@ -1348,10 +1435,10 @@ hold_excdflt <- irus_data %>% filter(site_room %in% c(cs$site_room)) %>%
   group_by(date_time, site_room) %>%
   summarise(temp = Setpoint)
 
-
+hold
 hold_excdflt
 hold %>% filter(temp > 23) %>% summarise(temp = mean(temp))
-hold %>% filter(temp > 23) %>% arrange(desc(date_time)) 
+hold %>% filter(temp > 25) %>% arrange(desc(date_time)) 
 hold %>% arrange(desc(date_time)) 
 
 #peaks on 7th Feb, 13th Feb (before), and double peaks 20th/21st Feb and 29th Feb/1st March (after)
@@ -1376,14 +1463,9 @@ irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14"
   summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
   arrange(desc(temp)) %>% filter (temp > 20)
 
-exclude <- irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
-(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
-  group_by(date_time ,site_room ) %>%
-  summarise(temp = Setpoint) %>%  summarise(temp = mean(temp, na.rm = TRUE)) %>% 
-  arrange(desc(temp)) %>% filter (temp > 20) %>% pull(date_time)
 
-# ifelse(irus_data $date_time %in% "exclude", 0, 1)
-irus_data <- irus_data %>% ungroup() %>% mutate(exclude = (ifelse(irus_data$date_time %in% exclude, 0, 1)) )
+
+#therefore to apply exclude (remove peaks) filter(., exclude = 1)
 
  #   date_time            temp
  #   <dttm>              <dbl>
