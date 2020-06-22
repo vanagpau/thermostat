@@ -508,22 +508,20 @@ cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 cs <- cs %>% mutate(sub19_change = sub19_after - sub19_before)
 cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
 
-# #Add daily set point averages (inc and exc defaults) 
-#and average air temp on df cs (for Adam)
+# Add daily set point averages (inc and exc defaults) 
+#and average air temp on df cs (for Adam4exc.csv)
 
-# cs <-left_join(cs, irus_data %>% group_by(site_room, Date) %>%
-#      summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-#        `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt,
-#                                                                na.rm = TRUE)) %>%
-#        pivot_wider(names_from = Date, values_from = 
-#                      c(daily_mean_sp, daily_mean_sp_excdflt, daily_airtemp)), 
-#                       by = "site_room")
+cs <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
+    group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
+       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(
+         daily_mean_sp_excdflt, na.rm = TRUE)), by = "site_room")
 
+write.csv(cs, file = "Adam4nopeaks.csv")
 
 
 #Remove actual (Irus) data from duplicate room L04F - replace with NAs
-cs[(which(grepl("L04F", cs$Q4))),(match("sub19_before",names(cs))):(
-  match("daily_airtemp_2020-03-13",names(cs)))] <- NA
+#cs[(which(grepl("L04F", cs$Q4))),(match("sub19_before",names(cs))):(
+#  match("daily_airtemp_2020-03-13",names(cs)))] <- NA
 
 #Standardise key variables
 cs <- cs %>% mutate(likelyPEB_mean_sz = as.numeric(scale(likelyPEB_mean)))
@@ -1208,6 +1206,13 @@ cs %>% group_by(Q21) %>% filter(n()>1) %>% select(Q21)
 
 
 
+#Linear Mixed Models
+
+
+#1. Visualise
+
+d %>% ggplot(aes(x = DAY, y = TEMPEXCL)) + geom_path()
+
 
 
 
@@ -1372,6 +1377,9 @@ irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <
     axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day") +
   geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
   geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31"))))
+
+
+
 
 #TWIN PEAKS
 
