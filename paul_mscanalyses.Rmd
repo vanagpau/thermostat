@@ -1,0 +1,104 @@
+---
+title: "Paul-MSc Analyses"
+author: "Adam Baimel"
+date: "22/06/2020"
+output: html_document
+---
+
+```{r}
+library(lme4)
+library(tidyr)
+library(dplyr)
+library(broom)
+library(sjPlot)
+library(ggplot2)
+library(lmerTest)
+library(vroom)
+library(lubridate)
+```
+
+``` {r}
+d <- vroom("Adam4nopeaks.csv")
+
+d <- 
+  d %>% 
+  mutate(DATEC = dmy(Date)) %>%  #fix date variable to correct order
+  mutate(TEMP = daily_mean_sp) %>% #rename daily_mean_sp to TEMP
+  mutate(TEMPEXCL = daily_mean_sp_excdflt) %>%  #rename daily_mean_sp_excdflt to TEMPEXCL
+  filter(DATEC >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
+  filter(DATEC <= as.Date("2020-02-29")) %>% #dropping all data points after Feb 29
+  mutate(DAY = gsub("(.*)[-]", "", DATEC)) %>% #extracting "DAY" from date
+  mutate(TEMP.C = TEMP-19) %>% #Centering TEMP with defaults on 19
+  mutate(DAY = as.numeric(DAY)-1) %>%  #Creating a DAY 0 = FEB 1st 
+  mutate(MANIPULATION = ifelse(DAY <= 14, 0, 1)) %>% #Tagging days as being either before manipulation (0) or after (1)
+  mutate(SITE = ifelse(grepl("CRESCENT", site_room), "CRESCENT", "WARNEFORD")) %>% #creating SITE variable
+  mutate(CONSEQUENCES = (AwarenessConsequences+AscriptionResponsibility)/2) %>% #creating an index from these 2 variables, they are correlated high enough
+  mutate(MORALATT = (Q8_7 + Q8_8 + Q8_9)/3) %>%  #creating MORAL ATTITUDES index from these 3 items
+  mutate(MORALATT.Z = (MORALATT - mean(MORALATT, na.rm=T))/sd(MORALATT, na.rm=T)) %>% #standardzing moral attitudes
+  mutate(CONSEQUENCES.Z =(CONSEQUENCES - mean(CONSEQUENCES, na.rm=T))/sd(CONSEQUENCES, na.rm=T)) #standardizing consequences variable 
+
+
+
+
+####Manipulation effect in sub-sample with questionnaire data
+#NO EXCLUSIONS
+m1 <- lmer(TEMP.C ~ 1 + DAY + (1|ResponseId), data=d)
+m2 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION + (1|ResponseId), data=d)
+m3 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION + SITE + (1|ResponseId), data=d)
+m4 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4)
+
+#EXCLUSIONS 
+m1 <- lmer(TEMPEXCL ~ 1 + DAY + (1|ResponseId), data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION + (1|ResponseId), data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION + SITE + (1|ResponseId), data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4)
+
+###Does anythign predict thermostat behaviour and/or moderate the effect of manipulation?
+
+#these variables seem to have no effect
+m1 <- lmer(TEMPEXCL ~ 1 + EAI_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + NEP_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + PEB_activist_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + MAC_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + MFT_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + Habit_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + SocialNorm_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + BSCS_mean_sz + DAY + (1|ResponseId),data=d)
+
+#these variables have some effect: MORALATT.Z PEB_pragmatist_sz Intention_sz PBC_sz Consequences.Z
+#So here you run more than one model
+m1 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + MANIPULATION + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z*MANIPULATION + SITE +  DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z*MANIPULATION*SITE +  DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+m1 <- lmer(TEMPEXCL ~ 1 + PEB_pragmatist_sz + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + PEB_pragmatist_sz + MANIPULATION + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + PEB_pragmatist_sz*MANIPULATION + SITE +  DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + PEB_pragmatist_sz*MANIPULATION*SITE +  DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+m1 <- lmer(TEMPEXCL ~ 1 + Intention_sz + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + Intention_sz + MANIPULATION + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + Intention_sz*MANIPULATION + SITE +  DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + Intention_sz*MANIPULATION*SITE +  DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+m1 <- lmer(TEMPEXCL ~ 1 + PBC_sz + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + PBC_sz + MANIPULATION + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + PBC_sz*MANIPULATION + SITE +  DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + PBC_sz*MANIPULATION*SITE +  DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+m1 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + MANIPULATION + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z*MANIPULATION + SITE +  DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z*MANIPULATION*SITE +  DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+plot_model(m4, type="pred", terms=c("MANIPULATION", "CONSEQUENCES.Z", "SITE"))
+```
+
