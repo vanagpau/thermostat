@@ -305,7 +305,18 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
 
+#MEANS
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% filter(exclude == 1) %>% 
+  summarise(avg_sp_before_excdfltCL = mean(Setpoint)) %>% as.data.frame()
 
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
+    filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% filter(exclude == 1) %>% 
+  summarise(avg_sp_before_excdfltCL = mean(Setpoint)) %>% as.data.frame()
 
 
 # 
@@ -408,7 +419,7 @@ cs <- left_join (cs, irus_data %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   filter(exclude == 1) %>%
   group_by(site_room) %>% 
-  summarise(avg_sp_before_excdflCL = mean(Setpoint)), by = "site_room")
+  summarise(avg_sp_before_excdfltCL = mean(Setpoint)), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
@@ -418,7 +429,6 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date(
   summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
 
 
-t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdflCL, paired = TRUE, alternative = "less")
 
 #Add data at 3 days and 7 days
 
@@ -447,7 +457,7 @@ t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdflCL, paired = TRUE, alte
 # mean(cs$avg_setpoint_before7, na.rm = TRUE)
 # mean(cs$avg_setpoint_after7, na.rm = TRUE)
 
-# t.test(cs$avg_setpoint_after3, cs$avg_setpoint_before3, paired = TRUE)
+
 
 
 #Add 3 day exc defaults measure to df cs
@@ -465,9 +475,6 @@ t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdflCL, paired = TRUE, alte
 #   group_by(site_room) %>% 
 #   summarise(avg_sp_after_excdflt3 = mean(Setpoint)), by = "site_room")
 # 
-# mean(cs$avg_sp_before_excdflt3, na.rm = TRUE)
-# mean(cs$avg_sp_after_excdflt3, na.rm = TRUE)
-# t.test(cs$avg_sp_before_excdflt3, cs$avg_sp_after_excdflt3, paired = TRUE)
 # 
 # #Add 7 day exc defaults measure to df cs
 # 
@@ -484,27 +491,14 @@ t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdflCL, paired = TRUE, alte
 #   group_by(site_room) %>% 
 #   summarise(avg_sp_after_excdflt7 = mean(Setpoint)), by = "site_room")
 # 
-# mean(cs$avg_sp_before_excdflt7, na.rm = TRUE)
-# mean(cs$avg_sp_after_excdflt7, na.rm = TRUE)
-# t.test(cs$avg_sp_before_excdflt7, cs$avg_sp_after_excdflt7, paired = TRUE)
+
 
 
 #Add change variable
 cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
 cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
 
-# Add daily set point averages (inc and exc defaults) 
-#and average air temp on df cs (for Adam4exc.csv)
 
-adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
-    group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE)),
-    by = "site_room")
-
-
-
-
-write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 
 
@@ -550,6 +544,21 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 #END OF DATA CLEAN and SETUP
 
 
+
+####EXPORT FOR MODELLING
+
+# Add daily set point averages (inc and exc defaults) 
+#and average air temp on df cs (for Adam4exc.csv)
+
+adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
+    group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
+       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE)),
+    by = "site_room")
+
+
+
+
+write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 
 
@@ -850,28 +859,90 @@ print(r.test(n = 86, r12 = (with(cs, cor(thermo_moral_mean, thermo_change_excdfl
 cs %>% select(MAC_mean, MFT_mean, thermo_moral_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
 
+
+#T TESTS
+
+
+
 #Paired T-tests for before and after thermostat set temp
 
 #averages of thermo setting before and after INC defaults
-mean(irus_data$avg_setpoint_before, na.rm = TRUE)
-mean(irus_data$avg_setpoint_after, na.rm = TRUE)
-t_inc <- irus_data %>% group_by(site_room) %>% summarise(before = mean(avg_setpoint_before), after = mean(avg_setpoint_after)) 
-t.test(t_inc$after,t_inc$before,paired=TRUE, na.rm = TRUE)
+
+t1 <- irus_data %>% group_by(site_room) %>%
+  select(avg_setpoint_before, avg_setpoint_after) %>%
+  distinct(site_room, avg_setpoint_before, avg_setpoint_after) 
+
+t.test(t1$avg_setpoint_after,t1$avg_setpoint_before,paired=TRUE, na.rm = TRUE, alternative = "less")
 
 #averages of thermo setting before and after EXC defaults
-mean(irus_data$avg_sp_before_excdflt, na.rm = TRUE)
-mean(irus_data$avg_sp_after_excdflt, na.rm = TRUE)
-t_excdflt <- irus_data %>% group_by(site_room) %>%
-  summarise(before = mean(avg_sp_before_excdflt), after = mean(avg_sp_after_excdflt)) 
-t.test(t_excdflt$after,t_excdflt$before, paired=TRUE)
+t3 <- irus_data %>% group_by(site_room) %>%
+  distinct(site_room, avg_sp_before_excdflt, avg_sp_after_excdflt)
+t.test(t3$avg_sp_after_excdflt,t3$avg_sp_before_excdflt, paired=TRUE, alternative = "less")
+
+#IRUS t tests for clean data - NO PEAKS
+t2 <- irus_data %>% group_by(site_room) %>%
+  distinct(site_room, avg_setpoint_beforeCL, avg_setpoint_afterCL)
+t.test(t2$avg_setpoint_afterCL, t2$avg_setpoint_beforeCL, paired=TRUE, alternative = "less")
+
+#IRUS t tests for clean data - NO PEAKS - EXC DEFAULTS
+t4 <- irus_data %>% group_by(site_room) %>%
+  distinct(site_room, avg_sp_before_excdfltCL, avg_sp_after_excdfltCL)
+t.test(t4$avg_sp_after_excdfltCL, t4$avg_sp_before_excdfltCL, paired=TRUE, alternative = "less")
 
 #Equivalent calculations for SURVEY dataset
 shapiro.test(cs$thermo_change)
 shapiro.test(cs$thermo_change_excdflt)
-mean(cs$thermo_change, na.rm = TRUE)
-mean(cs$thermo_change_excdflt, na.rm = TRUE)
-t.test(cs$avg_setpoint_after, cs$avg_setpoint_before, paired = TRUE)
-t.test(cs$avg_sp_after_excdflt, cs$avg_sp_before_excdflt, paired = TRUE)
+
+#MEANS and t tests for CS survey data
+#grand averages
+ irus_data %>% filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>%  
+ summarise(avg_setpoint_before = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+ 
+  irus_data %>% filter (Date > as.Date("2020-02-14") & Date < as.Date(  "2020-03-01")) %>%  
+ summarise(avg_setpoint_before = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+t.test(cs$avg_setpoint_after, cs$avg_setpoint_before, paired = TRUE, alternative = "less")
+
+#cleaned grand averages (no peaks)
+irus_data %>% 
+  filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% filter (exclude == 1) %>%
+  summarise(avg_setpoint_beforeCL = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+irus_data %>% 
+  filter (Date > as.Date("2020-02-14") & Date < as.Date(  "2020-03-01")) %>% filter (exclude == 1) %>%
+  summarise(avg_setpoint_afterCL = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+t.test(cs$avg_setpoint_afterCL, cs$avg_setpoint_beforeCL, paired = TRUE, alternative = "less")
+
+#excluding defaults
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
+  summarise(avg_sp_before_excdflt = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% 
+  summarise(avg_sp_after_excdflt = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+t.test(cs$avg_sp_after_excdflt, cs$avg_sp_before_excdflt, paired = TRUE, alternative = "less")
+
+#cleaned and excluding defaults
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
+  filter(exclude == 1) %>% 
+  summarise(avg_sp_before_excdfltCL = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame
+
+
+irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% 
+  filter(exclude == 1) %>% 
+  summarise(avg_sp_after_excdfltCL = mean(Setpoint, na.rm = TRUE)) %>% as.data.frame()
+
+t.test(cs$avg_sp_after_excdfltCL, cs$avg_sp_before_excdfltCL, paired = TRUE, alternative = "less")
 
 #Plot of survey data setpoints before and after
 
