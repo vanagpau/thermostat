@@ -235,12 +235,17 @@ irus_data <- left_join (irus_data, irus_data %>%
 irus_data <- left_join (irus_data, irus_data %>% 
   filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% filter (exclude == 1) %>%
   group_by(site_room) %>% 
-  summarise(avg_setpoint_beforeCL = mean(Setpoint)), by = "site_room")
+  summarise(avg_setpoint_beforeCL = (mean(Setpoint) - 19)), by = "site_room")
 
 irus_data <- left_join (irus_data, irus_data %>%
  filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% filter (exclude == 1) %>%
    group_by(site_room) %>%
-   summarise(avg_setpoint_afterCL = mean(Setpoint)), by = "site_room")
+   summarise(avg_setpoint_afterCL = (mean(Setpoint) - 19)), by = "site_room")
+
+irus_data <- left_join (irus_data, irus_data %>%
+ filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-03-01")) %>% filter (exclude == 1) %>%
+   group_by(site_room) %>%
+   summarise(avg_setpointCL = (mean(Setpoint) - 19)), by = "site_room")
 
  
 # #add sub19 settings to Irus data
@@ -303,20 +308,20 @@ irus_data <- left_join (irus_data, irus_data %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% 
   filter(exclude == 1) %>%
   group_by(site_room) %>% 
-  summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
+  summarise(avg_sp_after_excdfltCL = (mean(Setpoint)-19)), by = "site_room")
 
 #MEANS
 irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
     filter(Setpoint != 19) %>% 
   filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% filter(exclude == 1) %>% 
-  summarise(avg_sp_before_excdfltCL = mean(Setpoint)) %>% as.data.frame()
+  summarise(avg_sp_before_excdfltCL = (mean(Setpoint)-19)) %>% as.data.frame()
 
 irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>% 
     filter(Setpoint != 19) %>% 
   filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% filter(exclude == 1) %>% 
-  summarise(avg_sp_before_excdfltCL = mean(Setpoint)) %>% as.data.frame()
+  summarise(avg_sp_before_excdfltCL = (mean(Setpoint)-19)) %>% as.data.frame()
 
 
 # 
@@ -388,12 +393,17 @@ cs <- left_join(cs, irus_data %>%
 cs <- left_join(cs, irus_data %>% 
     filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% filter(exclude == 1) %>%
     group_by(site_room) %>% 
-    summarise(avg_setpoint_beforeCL = mean(Setpoint)), by = "site_room")
+    summarise(avg_setpoint_beforeCL = (mean(Setpoint)-19)), by = "site_room")
 
 cs <- left_join(cs, irus_data %>% 
                   filter(Date > as.Date("2020-02-14") & Date < as.Date(  "2020-03-01")) %>% filter(exclude == 1) %>%
                   group_by(site_room) %>%
-                  summarise(avg_setpoint_afterCL = mean(Setpoint)), by = "site_room")
+                  summarise(avg_setpoint_afterCL = (mean(Setpoint)-19)), by = "site_room")
+
+cs <- left_join(cs, irus_data %>% 
+                  filter(Date > as.Date("2020-01-30") & Date < as.Date(  "2020-03-01")) %>% filter(exclude == 1) %>%
+                  group_by(site_room) %>%
+                  summarise(avg_setpointCL = (mean(Setpoint)-19)), by = "site_room")
 
 
 #Add thermostat data exc defaults
@@ -419,14 +429,21 @@ cs <- left_join (cs, irus_data %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>%
   filter(exclude == 1) %>%
   group_by(site_room) %>% 
-  summarise(avg_sp_before_excdfltCL = mean(Setpoint)), by = "site_room")
+  summarise(avg_sp_before_excdfltCL = (mean(Setpoint)-19)), by = "site_room")
 
 cs <- left_join (cs, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
 filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
   filter(exclude ==1) %>%
   group_by(site_room) %>% 
-  summarise(avg_sp_after_excdfltCL = mean(Setpoint)), by = "site_room")
+  summarise(avg_sp_after_excdfltCL = (mean(Setpoint)-19)), by = "site_room")
+
+cs <- left_join (cs, irus_data %>% 
+  filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
+filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date("2020-03-01")) %>%
+  filter(exclude ==1) %>%
+  group_by(site_room) %>% 
+  summarise(avg_sp_overall_excdfltCL = (mean(Setpoint)-19)), by = "site_room")
 
 
 
@@ -558,7 +575,7 @@ adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_
 
 
 
-write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
+# write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 
 
@@ -787,7 +804,7 @@ M_full <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPE
 
 print(M_full, short = FALSE)
 
-corrplot(M_ba, method = "number", type = "lower", order = "AOE")
+corrplot(M, method = "number", type = "lower", order = "AOE")
 
 
 res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dflt as 2 taken out as duplicated (Room L04F)
@@ -797,6 +814,17 @@ write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.na
 
 corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "lt")
 
+
+cs %>% filter((Q8_7 > 0 | Q8_8 > 0) | (Q8_7 > 0 | Q8_9 > 0) | (Q8_8 > 0 | Q8_9 > 0)) 
+# = 81/88 agree with 2 or more of the 3 thermo_moral_mean statements
+
+cs %>% filter(Q8_7 < 0, Q8_8 < 0, Q8_9 < 0)
+#only 2 of 88 disagree with all 3 statements
+
+cs %>% filter(Q8_7 > 0, Q8_8 > 0, Q8_9 > 0)
+#41 / 88  (48%) agree to some extent with all 3 statements
+
+hist(cs$thermo_moral_mean)
 
 #Correlations with Actual PEB
 
@@ -858,6 +886,16 @@ print(r.test(n = 86, r12 = (with(cs, cor(thermo_moral_mean, thermo_change_excdfl
 #Correlation plot of morality scales with thermo attitude
 cs %>% select(MAC_mean, MFT_mean, thermo_moral_mean, likelyPEB_mean) %>% cor(
   ) %>% corrplot(method = "number", type = "lower")
+
+
+
+
+
+
+
+
+
+
 
 
 #T TESTS
@@ -1091,7 +1129,22 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 
 
-#REGRESSION MODELLING
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############            REGRESSION MODELLING
 
 #Model H1a (CADM validation)
 model_H1a <- lm(likelyPEB_mean_sz ~ (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
@@ -1195,19 +1248,38 @@ tab_model(model_H1aD, model_H1bD)
 model_H2a <- lm(thermo_moral_mean_sz ~ EAI_mean_sz + NEP_mean_sz, cs)
 summary(model_H2a)
 
-plot_model(model_H2a)
+tab_model(model_H2a)
 
 #Model 2b: EAI v NEP - actual PEB
-model_H2b <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + EAI_mean_sz
-                + NEP_mean_sz, cs)
-summary(model_H2b)
 
-tab_model(model_H2a, model_H2b)
-plot_model(model_H2b, type = "pred")
+#models with overall temp PEB
+model_H2b1 <- lm(avg_setpointCL ~ 1 + NEP_mean_sz + EAI_mean_sz, cs)
+summary(model_H2b1)
+
+model_H2b2 <- lm(avg_sp_overall_excdfltCL ~ 1 + NEP_mean_sz + EAI_mean_sz, cs)
+summary(model_H2b2)
+
+
+#models with AFTER controlling for BEFORE temp
+model_H2b3 <- lm(avg_setpoint_afterCL ~ 1 + avg_setpoint_beforeCL + EAI_mean_sz + NEP_mean_sz, cs)
+summary(model_H2b3)
+
+model_H2b4 <- lm(avg_sp_after_excdfltCL ~ 1 + avg_sp_before_excdfltCL + EAI_mean_sz + NEP_mean_sz, cs)
+summary(model_H2b4)
+
+tab_model(model_H2b1, model_H2b2, model_H2b3, model_H2b4)
+plot_model(model_H2b1, type = "pred")
 
 #HYPOTHESIS 3
-model_H3 <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + BSCS_mean_sz, cs)
+model_H3 <- lm((avg_setpointCL-19) ~ 1 + BSCS_mean_sz, cs)
 summary(model_H3)
+
+model_H3a <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + BSCS_mean_sz, cs)
+summary(model_H3a)
+
+tab_model(model_H3, model_H3a)
+
+
 
 
 #HYPOTHESIS 4
