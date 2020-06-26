@@ -15,6 +15,7 @@ library(nFactors)
 library(TTR)
 library(tidyquant)
 library(lme4)
+library(apaTables)
 
 
 setwd("E:/R files")
@@ -512,8 +513,8 @@ filter(Setpoint != 19) %>% filter(Date > as.Date("2020-01-30") & Date < as.Date(
 
 
 #Add change variable
-cs <- cs %>% mutate(thermo_change = avg_setpoint_after - avg_setpoint_before)
-cs <- cs %>% mutate (thermo_change_excdflt = avg_sp_after_excdflt - avg_sp_before_excdflt)
+cs <- cs %>% mutate(thermo_changeCL = avg_setpoint_afterCL - avg_setpoint_beforeCL)
+cs <- cs %>% mutate (thermo_change_excdfltCL = avg_sp_after_excdfltCL - avg_sp_before_excdfltCL)
 
 
 
@@ -678,6 +679,8 @@ cs %>% select(Q11_1:Q11_13) %>% cor(
     n.obs=88, main = "Parallel Analysis scree plot - Brief Self-Control Scale")
 
 
+
+
 #Correlations EAI vs NEP
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
 with(cs, cor.test(EAI_mean, likelyPEB_mean))
@@ -782,37 +785,86 @@ with(cs, cor.test(MFT_mean, PEB_pragmatist))
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 #M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
 
-M_exc <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+M <- cs %>% select(avg_sp_overall_excdfltCL, avg_setpointCL, thermo_changeCL, thermo_change_excdfltCL, 'Political orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
               MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
 
-M <- cs %>% select(thermo_change, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
-              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
-              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
-
-M19 <- cs %>% select(sub19_change, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
-              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
-              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
-
-M_ba <- cs %>% select(avg_setpoint_before, avg_setpoint_after, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
-              NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
-              MAC_mean, MFT_mean) %>% cor(use = "pairwise.complete.obs")
-
-M_full <- cs %>% select(thermo_change_excdflt, 'Political orientation', likelyPEB_mean, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+M_full <- cs %>% select(avg_sp_overall_excdfltCL, avg_setpointCL, thermo_changeCL, thermo_change_excdfltCL, 'Political orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
               MAC_mean, MFT_mean) %>% corr.test()
 
 print(M_full, short = FALSE)
-
+print(M)
+write.csv(M_full$ci, file = "main correlations.csv")
 corrplot(M, method = "number", type = "lower", order = "AOE")
 
+colcode <- c("olivedrab", 
+             "firebrick2",  "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "firebrick2", 
+              "olivedrab", 
+              "olivedrab",
+             "olivedrab")
 
-res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dflt as 2 taken out as duplicated (Room L04F)
+colnames(M) <- c("Mean setpoint (exc defaults)",
+                 "Mean setpoint", 
+                 "Thermostat change",
+                 "Thermostat change (exc defaults)", 
+                 "Political orientation", 
+                 "PEB Activist", 
+                 "PEB Pragmatist", 
+                 "Awareness of consequences", 
+                 "Acsription of responsibility", 
+                 "NEP",
+                 "EAI", 
+                 "Social norm", 
+                 "Perceived behavioural control", 
+                 "Habit",
+                 "Intention",
+                 "Attitude (specific)",
+                 "Self-control",
+                 "MAC",
+                 "MFT")
+
+rownames(M) <- c("Mean setpoint (exc defaults)",
+                 "Mean setpoint", 
+                 "Thermostat change",
+                 "Thermostat change (exc defaults)", 
+                 "Political orientation", 
+                 "PEB Activist", 
+                 "PEB Pragmatist", 
+                 "Awareness of consequences", 
+                 "Acsription of responsibility", 
+                 "NEP",
+                 "EAI", 
+                 "Social norm", 
+                 "Perceived behavioural control", 
+                 "Habit",
+                 "Intention",
+                 "Attitude (specific)",
+                 "Self-control",
+                 "MAC",
+                 "MFT")
+
+res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
 res1$ci
+
+
 
 write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
-corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .7, tl.pos = "lt")
+corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
 
 
 cs %>% filter((Q8_7 > 0 | Q8_8 > 0) | (Q8_7 > 0 | Q8_9 > 0) | (Q8_8 > 0 | Q8_9 > 0)) 
@@ -1146,6 +1198,10 @@ boxplot1 %>% ggplot() + geom_boxplot(aes(x = Q3, y = setting, colour = condition
 
 ##############            REGRESSION MODELLING
 
+
+
+
+
 #Model H1a (CADM validation)
 model_H1a <- lm(likelyPEB_mean_sz ~ (AwarenessConsequences_sz + Habit_sz + SocialNorm_sz + 
   AscriptionResponsibility_sz + PBC_sz + Intention_sz + NEP_mean_sz + 
@@ -1230,14 +1286,41 @@ summary(model_H1b_diff_2way)
 tab_model(model_H1b_diff_2way)
 
 #Model H1aD (CADM validation) likely_PEB w. DEMOGRAPHICS
-model_H1aD <- lm(likelyPEB_mean_sz ~ Q13 + Q34 +
-                   PoliticalOrientation_sz + Q17, cs)
+cs$Q13 <- na_if(cs$Q13, "Different Identity") # exclude single observation
+cs$Q15 <- na_if(cs$Q15, "Other ethnic group") # exclude single observation
+model_H1aD <- lm(avg_sp_overall_excdfltCL ~ Q13 + Q34 +
+                   PoliticalOrientation_sz + Q17 + Q15, cs)
 summary(model_H1aD)
+tab_model(model_H1aD)
+
+
+model1 <- (lm(avg_sp_overall_excdfltCL ~ 1 + Q13, cs))
+model2 <- (lm(avg_sp_overall_excdfltCL ~ 1 + Q34, cs))
+model3 <- (lm(avg_sp_overall_excdfltCL ~ 1 + PoliticalOrientation_sz , cs))
+model4 <- (lm(avg_sp_overall_excdfltCL ~ 1 + Q17, cs))
+model5 <- (lm(avg_sp_overall_excdfltCL ~ 1 + Q15, cs))
+tab_model(model1, model2, model3, model4, model5)
+
+summary(model3)
 
 #Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
+
 model_H1bD <- lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q13 + Q34 + 
-  PoliticalOrientation_sz + Q17, cs)
+  PoliticalOrientation_sz + Q17 + Q15, cs)
 summary(model_H1bD)
+
+plot_model(lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q13 + Q34 + 
+  PoliticalOrientation_sz + Q17 + Q15, cs))
+
+plot_model(lm(avg_sp_after_excdflt19 ~ 1 + avg_sp_before_excdflt19 + Q13 + Q34 + 
+  PoliticalOrientation_sz + Q17 + Q15, cs))
+
+
+
+
+
+
+
 
 plot_model(model_H1bD, type = "pred")
 tab_model(model_H1aD, model_H1bD)
@@ -1507,8 +1590,9 @@ irus_data %>% filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <
   summarise(number = sum(Setpoint)) %>%
   ggplot(aes(x = Date, y = number)) + geom_point() + theme(
     axis.text.x = element_text(angle = 90, size = 8)) + scale_x_date(breaks = "1 day") +
-  geom_ma(n = 7) + labs(title = "Number of non-default settings by day & rolling 7 day average") +
-  geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31"))))
+  geom_ma(n = 3) + labs(title = "Number of non-default settings by day & rolling 3 day average") +
+  geom_vline(aes(xintercept = as.numeric(as.Date("2020-01-31")))) +
+  geom_vline(aes(xintercept = as.numeric(as.Date("2020-02-29"))))
 
 
 
