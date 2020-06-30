@@ -539,9 +539,9 @@ cs <- cs %>% mutate(avg_setpoint_before_sz = as.numeric(scale(avg_setpoint_befor
 cs <- cs %>% mutate(avg_setpoint_after_sz = as.numeric(scale(avg_setpoint_after)))
 cs <- cs %>% mutate(avg_sp_before_excdflt_sz = as.numeric(scale(avg_sp_before_excdflt)))
 cs <- cs %>% mutate(avg_sp_after_excdflt_sz = as.numeric(scale(avg_sp_after_excdflt)))
-cs <- cs %>% mutate(thermo_change_sz = as.numeric(scale(thermo_change)))
+cs <- cs %>% mutate(thermo_changeCL_sz = as.numeric(scale(thermo_changeCL)))
 # cs <- cs %>% mutate(sub19_change_sz = as.numeric(scale(sub19_change)))
-cs <- cs %>% mutate(thermo_change_excdflt_sz = as.numeric(scale(thermo_change_excdflt)))
+cs <- cs %>% mutate(thermo_change_excdfltCL_sz = as.numeric(scale(thermo_change_excdfltCL)))
 cs <- cs %>% mutate(AwarenessConsequences_sz = as.numeric(scale(AwarenessConsequences)))
 cs <- cs %>% mutate(Habit_sz = as.numeric(scale(Habit)))
 cs <- cs %>% mutate(Intention_sz = as.numeric(scale(Intention)))
@@ -563,6 +563,17 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 ####EXPORT FOR MODELLING
 
 # Add daily set point averages (inc and exc defaults) 
@@ -570,9 +581,9 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
     group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE)),
+       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
+       external = mean(Ext_temp_celsius)),
     by = "site_room")
-
 
 
 
@@ -761,10 +772,10 @@ r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_activist))), n2 = 12945, 
 r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_pragmatist))), n2 = 12945, r34 = .55)
 
 #Correlation Attitudes w. likely PEB
-with(cs, cor.test(thermo_moral_mean, likelyPEB_mean))
+
 with(cs, cor.test(thermo_moral_mean, PEB_activist))
 with(cs, cor.test(thermo_moral_mean, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, likelyPEB_mean))), n2 = 14053, r34 = .36)
+
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_activist))), n2 = 14053, r34 = .36)
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
 
@@ -798,10 +809,9 @@ print(M)
 write.csv(M_full$ci, file = "main correlations.csv")
 corrplot(M, method = "number", type = "lower", order = "AOE")
 
-colcode <- c("olivedrab", 
-             "firebrick2",  "firebrick2", 
-              "firebrick2", 
-              "firebrick2", 
+colcode <- c("firebrick2", 
+             "firebrick2",  
+             "firebrick2", 
               "firebrick2", 
               "firebrick2", 
               "firebrick2", 
@@ -814,6 +824,8 @@ colcode <- c("olivedrab",
               "firebrick2", 
               "firebrick2", 
               "olivedrab", 
+              "olivedrab", 
+              "firebrick2", 
               "olivedrab",
              "olivedrab")
 
@@ -864,7 +876,7 @@ res1$ci
 
 write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
-corrplot.mixed(M, order = "AOE",lower.col = "black", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
+corrplot.mixed(M, order = "hclust",lower.col = "black", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
 
 
 cs %>% filter((Q8_7 > 0 | Q8_8 > 0) | (Q8_7 > 0 | Q8_9 > 0) | (Q8_8 > 0 | Q8_9 > 0)) 

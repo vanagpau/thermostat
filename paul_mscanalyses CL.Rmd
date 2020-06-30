@@ -80,17 +80,19 @@ d <-
 ####Manipulation effect in sub-sample with questionnaire data
 #NO EXCLUSIONS
 m1 <- lmer(TEMP.C ~ 1 + DAY + (1|ResponseId), data=d)
-m2 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION + (1|ResponseId), data=d)
-m3 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION + SITE + (1|ResponseId), data=d)
-m4 <- lmer(TEMP.C ~ 1 + DAY + MANIPULATION*SITE + (1|ResponseId), data=d)
-tab_model(m1, m2, m3, m4)
+m2 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
+m3 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
+m4 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
+m5 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4, m5)
 
 #EXCLUSIONS 
-m5 <- lmer(TEMPEXCL ~ 1 + DAY + (1|ResponseId), data=d)
-m6 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION + (1|ResponseId), data=d)
-m7 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION + SITE + (1|ResponseId), data=d)
-m8 <- lmer(TEMPEXCL ~ 1 + DAY + MANIPULATION*SITE + (1|ResponseId), data=d)
-tab_model(m5, m6, m7, m8)
+m1 <- lmer(TEMPEXCL ~ 1 + DAY + (1|ResponseId), data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
+m5 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4, m5)
 
 #Given that the manipulation effect doesn't hold up in the questionnaire sub-sample
 #best to just focus on whether questionnaire data predicts thermostat usage at all
@@ -111,15 +113,16 @@ m1 <- lmer(TEMPEXCL ~ 1 + BSCS_mean_sz + DAY + (1|ResponseId),data=d)
 #But you should double check that :)
 m1 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + DAY + (1|ResponseId),data=d)
 
-m1 <- lmer(TEMPEXCL ~ 1 + PEB_pragmatist_sz + DAY + (1|ResponseId),data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + Intention_sz + DAY + (1|ResponseId),data=d)
 
-m1 <- lmer(TEMPEXCL ~ 1 + Intention_sz + DAY + (1|ResponseId),data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + PBC_sz + DAY + (1|ResponseId),data=d)
 
-m1 <- lmer(TEMPEXCL ~ 1 + PBC_sz + DAY + (1|ResponseId),data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
 
-m1 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + DAY + (1|ResponseId),data=d)
-
-
+m5 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + PBC_sz + Intention_sz + CONSEQUENCES.Z + DAY + EXTERNAL.Z+ (1|ResponseId),data=d)
+summary(m5)
+tab_model(m5)
 
 ```
 
