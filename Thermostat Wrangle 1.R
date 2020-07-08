@@ -708,88 +708,96 @@ r.test(r12=(with(cs, cor(EAI_mean, thermo_change_excdflt))), n=88, r34=(
 
 #Correlations and significance compared to CADM
 
+#Correlation of behavioural intention scales with one another
+
+with(cs, cor.test(PEB_pragmatist, PEB_activist))
+
+
+
+
 #Correlation of political orientation w. likely_PEB & thermo_change
-with(cs, cor.test(cs$'Political orientation', likelyPEB_mean))
+with(cs, cor.test(cs$'Political orientation', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'Political orientation', PEB_activist))
 with(cs, cor.test(cs$'Political orientation', PEB_pragmatist))
 with(cs, cor.test(cs$'Political orientation', thermo_change))
 with(cs, cor.test(cs$'Political orientation', sub19_change))
 
 #Correlation Awareness of Consequences w. likely PEB
-with(cs, cor.test(cs$'AwarenessConsequences', likelyPEB_mean))
+with(cs, cor.test(cs$'AwarenessConsequences', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'AwarenessConsequences', PEB_activist))
 with(cs, cor.test(cs$'AwarenessConsequences', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', likelyPEB_mean))), n2 = 13215, r34 = .22)
+r.test(n = 88, r12 = with(cs, cor(cs$'AwarenessConsequences', -avg_sp_overall_excdfltCL, use="complete.obs")), n2 = 13215, r34 = .22)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_activist))), n2 = 13215, r34 = .22)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
 
 #Correlation Ascription of Responsibility w. likely PEB
-with(cs, cor.test(cs$'AscriptionResponsibility', likelyPEB_mean))
+with(cs, cor.test(cs$'AscriptionResponsibility', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'AscriptionResponsibility', PEB_activist))
 with(cs, cor.test(cs$'AscriptionResponsibility', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', likelyPEB_mean))), n2 = 4217, r34 = .10)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 4217, r34 = .10)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_activist))), n2 = 4217, r34 = .10)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
 
 #Correlation NEP w. likely PEB
-with(cs, cor.test(NEP_mean, likelyPEB_mean))
+with(cs, cor.test(NEP_mean, -avg_sp_overall_excdfltCL))
 with(cs, cor.test(NEP_mean, PEB_activist))
 with(cs, cor.test(NEP_mean, PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(NEP_mean, likelyPEB_mean))), n2 = 3499, r34 = .09)
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 3499, r34 = .09)
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .09)
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
 
 #Correlation SocialNorm w. likely PEB
-with(cs, cor.test(cs$'SocialNorm', likelyPEB_mean))
+with(cs, cor.test(cs$'SocialNorm', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'SocialNorm', PEB_activist))
 with(cs, cor.test(cs$'SocialNorm', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', likelyPEB_mean))), n2 = 14170, r34 = .24)
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 14170, r34 = .24)
 r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_activist))), n2 = 14170, r34 = .24)
 r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_pragmatist))), n2 = 14170, r34 = .24)
 
 #Correlation Perceived Behavioural Control w. likely PEB
-with(cs, cor.test(cs$'PBC', likelyPEB_mean))
+with(cs, cor.test(cs$'PBC', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'PBC', PEB_activist))
 with(cs, cor.test(cs$'PBC', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', likelyPEB_mean))), n2 = 15020, r34 = .40)
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 15020, r34 = .40)
 r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_activist))), n2 = 15020, r34 = .40)
 r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_pragmatist))), n2 = 15020, r34 = .40)
 
 #Correlation Habits w. likely PEB
-with(cs, cor.test(cs$'Habit', likelyPEB_mean))
+with(cs, cor.test(cs$'Habit', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'Habit', PEB_activist))
 with(cs, cor.test(cs$'Habit', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', likelyPEB_mean))), n2 = 7747, r34 = .46)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 7747, r34 = .46)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_activist))), n2 = 7747, r34 = .46)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_pragmatist))), n2 = 7747, r34 = .46)
 
 #Correlation Intentions w. likely PEB
-with(cs, cor.test(cs$'Intention', likelyPEB_mean))
+with(cs, cor.test(cs$'Intention', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'Intention', PEB_activist))
 with(cs, cor.test(cs$'Intention', PEB_pragmatist))
-r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', likelyPEB_mean))), n2 = 12945, r34 = .55)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', -avg_sp_overall_excdfltCL, use="complete.obs"
+                                   ))), n2 = 12945, r34 = .55)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_activist))), n2 = 12945, r34 = .55)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Intention', PEB_pragmatist))), n2 = 12945, r34 = .55)
 
 #Correlation Attitudes w. likely PEB
-
+with(cs, cor.test(thermo_moral_mean, -avg_sp_overall_excdfltCL))
 with(cs, cor.test(thermo_moral_mean, PEB_activist))
 with(cs, cor.test(thermo_moral_mean, PEB_pragmatist))
-
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 14053, r34 = .36)
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_activist))), n2 = 14053, r34 = .36)
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
 
 #Correlation BSCS with likelyPEB
-with(cs, cor.test(BSCS_mean, likelyPEB_mean))
+with(cs, cor.test(BSCS_mean, -avg_sp_overall_excdfltCL))
 with(cs, cor.test(BSCS_mean, PEB_activist))
 with(cs, cor.test(BSCS_mean, PEB_pragmatist))
 
 #Correlation MAC w. likely PEB
-with(cs, cor.test(MAC_mean, likelyPEB_mean))
+with(cs, cor.test(MAC_mean, -avg_sp_overall_excdfltCL))
 with(cs, cor.test(MAC_mean, PEB_activist))
 with(cs, cor.test(MAC_mean, PEB_pragmatist))
 #Correlation MFT w. likely PEB
-with(cs, cor.test(MFT_mean, likelyPEB_mean))
+with(cs, cor.test(MFT_mean, -avg_sp_overall_excdfltCL))
 with(cs, cor.test(MFT_mean, PEB_activist))
 with(cs, cor.test(MFT_mean, PEB_pragmatist))
 
@@ -876,8 +884,9 @@ res1$ci
 
 write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
-corrplot.mixed(M, order = "hclust",lower.col = "black", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
+corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
 
+#Statistics showing understanding thermostat control = environmental behaviour
 
 cs %>% filter((Q8_7 > 0 | Q8_8 > 0) | (Q8_7 > 0 | Q8_9 > 0) | (Q8_8 > 0 | Q8_9 > 0)) 
 # = 81/88 agree with 2 or more of the 3 thermo_moral_mean statements
@@ -1314,6 +1323,8 @@ model5 <- (lm(avg_sp_overall_excdfltCL ~ 1 + Q15, cs))
 tab_model(model1, model2, model3, model4, model5)
 
 summary(model3)
+summary(model4)
+confint(model4, "Q17Yes", level = 0.95)
 
 #Model H1bD (CADM validation) thermo_change_excdflt w. DEMOGRAPHICS
 
@@ -1493,7 +1504,7 @@ qqnorm(cs$likelyPEB_mean, ylab = "thermo_moral")
 qqline(cs$likelyPEB_mean, ylab = "thermo_moral")
 
 hist(cs$PEB_activist, breaks = 7)
-hist(cs$PEB_pragmatist, breaks = 7)
+hist(cs$PEB_pragmatist, breaks = 7, xlim = c(0,7), main = NULL, xlab = "Mean score on PEB Pragmatist")
 
 
 cs %>% ggplot() + geom_point(mapping = aes(
@@ -1506,7 +1517,8 @@ plotA01A <- irus_data %>% filter(Name == "A01A") %>% ggplot () + ylim(16,24) + g
 plotA01B <- irus_data %>% filter(Name == "A01B") %>% ggplot () + ylim(16,24) + geom_point(
     mapping = aes(x = date_time, y = Setpoint))
 plotA01C <- irus_data %>% filter(Name == "A01C") %>% ggplot () + ylim(16,24) + geom_point(
-    mapping = aes(x = date_time, y = Setpoint)) + ggtitle("Room A01C thermostat settings 30th Jan 2020 - 28th Feb 2020")
+    mapping = aes(x = date_time, y = Setpoint)) + ggtitle("Room A01C - thermostat set point over time") +
+  xlab("Date/time")
 plotA01C
 plotA01D <- irus_data %>% filter(Name == "A01D") %>% ggplot () + ylim(16,24) + geom_point(
     mapping = aes(x = date_time, y = Setpoint))
@@ -1578,15 +1590,15 @@ irus_data %>%
   group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
             (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
   summarise(External = mean(Ext_temp_celsius), 
-            Thermostat_exc_dflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
-            Thermostat = mean(Setpoint, na.rm = TRUE)) %>%
-  ggplot() + geom_line(aes(x = Date, y = Thermostat_exc_dflt, colour = "Thermostat_exc_dflt")) + 
+            `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
+            `Thermostat setting` = mean(Setpoint, na.rm = TRUE)) %>%
+  ggplot() + geom_line(aes(x = Date, y = `Thermostat setting exc. defaults`, colour = "Thermostat setting exc. defaults")) + 
   geom_line(aes(x = Date, y = External, colour = "External")) + 
   labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", 
        y = "Temp (celsius)") + 
-  geom_line(aes(x = Date, y = Thermostat, colour = "Thermostat"), linetype = "dotted") +
+  geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted") +
   scale_color_manual(values = c(
-    "External" = "royalblue3", "Thermostat" = "black", "Thermostat_exc_dflt" = "red"))
+    "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) 
   
 #Plot intention versus actual behaviour
 cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
@@ -1624,7 +1636,8 @@ irus_data %>%
   group_by(date_time) %>%
   summarise(mean = mean(Setpoint, na.rm = TRUE), ext = mean(Ext_temp_celsius), roomtemp = mean(`Temp Air`)) %>%
   ggplot(aes(x = date_time)) + geom_line(aes(x = date_time, y = mean, colour = "Thermostat setting")) + geom_ma(aes(y = mean), n=24) +
-  geom_line(aes(y = roomtemp, colour = "Room temperature")) + geom_ma(aes(y = roomtemp), n=24)
+  geom_line(aes(y = roomtemp, colour = "Room temperature")) + geom_ma(aes(y = roomtemp), n=24) + 
+  xlab("Date") + ylab("Mean temperature (degrees celsius)")
 
 irus_data %>% 
   group_by(date_time ,site_room ) %>%
