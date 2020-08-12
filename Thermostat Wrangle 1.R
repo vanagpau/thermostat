@@ -726,9 +726,17 @@ with(cs, cor.test(cs$'Political orientation', sub19_change))
 with(cs, cor.test(cs$'AwarenessConsequences', -avg_sp_overall_excdfltCL))
 with(cs, cor.test(cs$'AwarenessConsequences', PEB_activist))
 with(cs, cor.test(cs$'AwarenessConsequences', PEB_pragmatist))
+#comparison with CADM Behaviour
 r.test(n = 88, r12 = with(cs, cor(cs$'AwarenessConsequences', -avg_sp_overall_excdfltCL, use="complete.obs")), n2 = 13215, r34 = .22)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_activist))), n2 = 13215, r34 = .22)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_pragmatist))), n2 = 13215, r34 = .22)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_activist))), n2 = 12464, r34 = .33)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AwarenessConsequences', PEB_pragmatist))), n2 = 12464, r34 = .33)
+
+
+
 
 #Correlation Ascription of Responsibility w. likely PEB
 with(cs, cor.test(cs$'AscriptionResponsibility', -avg_sp_overall_excdfltCL))
@@ -737,6 +745,11 @@ with(cs, cor.test(cs$'AscriptionResponsibility', PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 4217, r34 = .10)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_activist))), n2 = 4217, r34 = .10)
 r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_pragmatist))), n2 = 4217, r34 = .10)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_activist))), n2 = 4784, r34 = .34)
+r.test(n = 88, r12 = (with(cs, cor(cs$'AscriptionResponsibility', PEB_pragmatist))), n2 = 4784, r34 = .34)
+
 
 #Correlation NEP w. likely PEB
 with(cs, cor.test(NEP_mean, -avg_sp_overall_excdfltCL))
@@ -745,6 +758,11 @@ with(cs, cor.test(NEP_mean, PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 3499, r34 = .09)
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 3499, r34 = .09)
 r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 3499, r34 = .09)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_activist))), n2 = 4077, r34 = .32)
+r.test(n = 88, r12 = (with(cs, cor(NEP_mean, PEB_pragmatist))), n2 = 4077, r34 = .32)
+
 
 #Correlation SocialNorm w. likely PEB
 with(cs, cor.test(cs$'SocialNorm', -avg_sp_overall_excdfltCL))
@@ -753,6 +771,11 @@ with(cs, cor.test(cs$'SocialNorm', PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 14170, r34 = .24)
 r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_activist))), n2 = 14170, r34 = .24)
 r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_pragmatist))), n2 = 14170, r34 = .24)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_activist))), n2 = 16768, r34 = .47)
+r.test(n = 88, r12 = (with(cs, cor(cs$'SocialNorm', PEB_pragmatist))), n2 = 16768, r34 = .47)
+
 
 #Correlation Perceived Behavioural Control w. likely PEB
 with(cs, cor.test(cs$'PBC', -avg_sp_overall_excdfltCL))
@@ -761,6 +784,11 @@ with(cs, cor.test(cs$'PBC', PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 15020, r34 = .40)
 r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_activist))), n2 = 15020, r34 = .40)
 r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_pragmatist))), n2 = 15020, r34 = .40)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_activist))), n2 = 17489, r34 = .54)
+r.test(n = 88, r12 = (with(cs, cor(cs$'PBC', PEB_pragmatist))), n2 = 17489, r34 = .54)
+
 
 #Correlation Habits w. likely PEB
 with(cs, cor.test(cs$'Habit', -avg_sp_overall_excdfltCL))
@@ -769,6 +797,12 @@ with(cs, cor.test(cs$'Habit', PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 7747, r34 = .46)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_activist))), n2 = 7747, r34 = .46)
 r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_pragmatist))), n2 = 7747, r34 = .46)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_activist))), n2 = 7319, r34 = .47)
+r.test(n = 88, r12 = (with(cs, cor(cs$'Habit', PEB_pragmatist))), n2 = 7319, r34 = .47)
+
+
 
 #Correlation Intentions w. likely PEB
 with(cs, cor.test(cs$'Intention', -avg_sp_overall_excdfltCL))
@@ -786,6 +820,11 @@ with(cs, cor.test(thermo_moral_mean, PEB_pragmatist))
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, -avg_sp_overall_excdfltCL, use="complete.obs"))), n2 = 14053, r34 = .36)
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_activist))), n2 = 14053, r34 = .36)
 r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 14053, r34 = .36)
+#comparison with CADM Intention
+
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_activist))), n2 = 16949, r34 = .62)
+r.test(n = 88, r12 = (with(cs, cor(thermo_moral_mean, PEB_pragmatist))), n2 = 16949, r34 = .62)
+
 
 #Correlation BSCS with likelyPEB
 with(cs, cor.test(BSCS_mean, -avg_sp_overall_excdfltCL))
