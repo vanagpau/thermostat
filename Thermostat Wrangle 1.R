@@ -576,18 +576,17 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ####EXPORT FOR MODELLING
 
-# Add daily set point averages (inc and exc defaults) 
-#and average air temp on df cs (for Adam4exc.csv)
+# main data file for longitudinal modelling (LARGE; 700k + rows)
+write.csv(irus_data, file = "AdamIrusdata.csv")
 
+# data file for matching effect to rooms (Small; 88 rows)
 adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
     group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
        `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
        external = mean(Ext_temp_celsius)),
     by = "site_room")
 
-
-
-# write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
+write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 
 

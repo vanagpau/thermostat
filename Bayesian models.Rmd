@@ -1,0 +1,37 @@
+---
+title: "Bayesian modelling"
+author: "Paul V"
+date: "27/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Libraries
+```{r}
+library(tidyverse)
+library(data.table)
+library(psych)
+library(standardize)
+library(gridExtra)
+library(corrplot)
+library(GPArotation)
+library(RColorBrewer)
+library(lubridate)
+library(vroom)
+library(fasttime)
+library(sjPlot)
+library(naniar)
+library(nFactors)
+library(TTR)
+library(tidyquant)
+library(lme4)
+library(apaTables)
+library(rethinking)
+
+## Data set-up
+
+
+
+
