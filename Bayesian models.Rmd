@@ -458,7 +458,7 @@ flist <- alist (S ~ dnorm(mu, sigma),
 
 m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
 
-#Plot posterior distribution
+#Plot posterior distribution savey wavey
 
 
 #Model 2 - SAMPLE data; depends on participant
