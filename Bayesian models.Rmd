@@ -407,11 +407,94 @@ adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_
 write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 ```
 
-## CREATE DATA-FRAME for modelling
+## CREATE DATA-FRAME (df) for modelling
 ```{r}
+#Create new data-frame with appropriate variables
 df <- irus_data %>%
   filter(Date >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
   filter(Date <= as.Date("2020-02-29")) %>%
-  mutate(TEMP.C = TEMP-19) %>% #Centering TEMP with defaults on 19
-  mutate(EXTERNAL.Z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
+  filter(Date != as.Date("2020-02-14")) %>% #remove 14th Feb as intervention time unknown
+  filter(is.na(Setpoint) == 0) %>%
+  mutate(time_elapsed = date_time - date_time[1]) %>% #zero time clock
+  mutate(temp.c = Setpoint-19) %>% #Centering TEMP with defaults on 19
+  mutate(external.z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
+
+#Replace all unique room names (characters) with number for modelling
+cross_table <- data.frame(Name = unique(df$Name),Code = seq(1:length(unique(df$Name))))
+
+df$Address <- as.integer(lapply(df$Name, function(x) cross_table$Code[match(x, cross_table$Name)]))
+
+#Replace "Before" and "After" with 0's and 1's in df$intervention variable
+df$intervention <- ifelse(df$intervention == "Before",0,1)
+
+#Take sample of data to test models (faster)
+df_sample <- df[sample(nrow(df), 10000), ]
+
+```
+
+## Models
+```{r}
+
+# Behaviour, S = thermostat set-point at a given time-point
+# basic model - normal distribution, which depends firstly on participant;
+# Dependent variable is 'Setpoint'
+
+# Mixed-model to model how S depends on time, participant and effect of comms with external temp as co-variate
+
+# first model with time only SAMPLE
+dat_sample <- list(S = df_sample$Setpoint,
+T = df_sample$time_elapsed, P = df_sample$Address, C = df_sample$intervention, X = df_sample$external.z)
+
+#Create data list for FULL DATA modelling
+dat <- list(S = df$Setpoint,
+T = df$time_elapsed, P = df$Address, C = df$intervention, X = df$external.z)
+
+#Model 1 with time only FULL DATA
+flist <- alist (S ~ dnorm(mu, sigma),
+                mu <- a + bT*T,
+                a ~ dnorm(19, 1.5),
+                bT ~ dnorm(0, 0.5),
+                sigma ~ dexp(1))
+
+m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
+
+#Plot posterior distribution
+
+
+#Model 2 - SAMPLE data; depends on participant
+flist <- alist (S ~ dnorm(mu, sigma),
+                mu <- a + bP[P],
+                a ~ dnorm(mu_P, sigma_P),
+                mu_P ~ dnorm(19,0),
+                sigma_P ~dexp(1),
+                bP ~ dnorm(0, 0.5),
+                sigma ~ dexp(1))
+
+m1 <- ulam(flist, data = dat_sample, chains = 2, cores = 2)
+
+
+
+
+```
+B ~ N(mu, sigma)
+mu ~ N(alpha[p],sigma[p]); p = participant 1..352
+
+#which then depends, from the CADM model, on 3 proximal variables; HAB = habit, INT = intention, PBC =  perceived behavioural control
+alpha[p] ~ beta_HAB[p] + beta_INT[p] + beta_PBC[p]
+sigma[p] ~ exp(1)
+
+#Adaptive priors for mixed model
+beta_HAB ~ N(mu_hab, sigma_hab)
+beta_INT ~ N(mu_int, sigma_int)  
+beta_PBC ~ N(mu_pbc, sigma_pbc)
+
+#Weak priors for standardised variables
+mu_hab ~ N(0, 1.5)
+mu_int  ~ N(0, 1.5)
+mu_pbc ~ N(0, 1.5)
+sigma_hab ~ exp(1)
+sigma_int ~ exp(1)
+sigma_pbc  ~ exp(1)
+
+
 
