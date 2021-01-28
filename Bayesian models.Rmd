@@ -35,6 +35,7 @@ library(rethinking)
 ```{r}
 setwd("E:/R files")
 #For Laptop work setwd("/home/vanagpau/R/thermostat")
+#For Reading virtual machine setwd("/home/users/kl819459/Desktop/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
