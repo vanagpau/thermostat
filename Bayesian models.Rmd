@@ -459,6 +459,8 @@ flist <- alist (S ~ dnorm(mu, sigma),
 
 m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
 
+save(m1, file = "m1.RData")
+
 #Plot posterior distribution savey wavey
 
 
