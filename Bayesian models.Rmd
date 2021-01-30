@@ -33,8 +33,9 @@ library(rethinking)
 
 ## Data set-up
 ```{r}
-setwd("E:/R files")
-#For Laptop work setwd("/home/vanagpau/R/thermostat")
+#setwd("E:/R files")
+#For Laptop work 
+setwd("/home/vanagpau/R/thermostat")
 #For Reading virtual machine setwd("/home/users/kl819459/Desktop/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
@@ -438,7 +439,7 @@ df_sample <- df[sample(nrow(df), 10000), ]
 
 # Behaviour, S = thermostat set-point at a given time-point
 # basic model - normal distribution, which depends firstly on participant;
-# Dependent variable is 'Setpoint'
+# Dependent variable is S = 'Setpoint'
 
 # Mixed-model to model how S depends on time, participant and effect of comms with external temp as co-variate
 
@@ -457,28 +458,29 @@ flist <- alist (S ~ dnorm(mu, sigma),
                 bT ~ dnorm(0, 0.5),
                 sigma ~ dexp(1))
 
-m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
+# Don't run this unless you need to again - it's saved as m1
+# m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
 
-save(m1, file = "m1.RData")
-
-#Plot posterior distribution savey wavey
+#load(m1, file = "m1.RData")
 
 
-#Model 2 - SAMPLE data; depends on participant
+#Model 2 - SAMPLE data; depends on participant and intervention, controlling for external temperature
 flist <- alist (S ~ dnorm(mu, sigma),
-                mu <- a + bP[P],
-                a ~ dnorm(mu_P, sigma_P),
-                mu_P ~ dnorm(19,0),
-                sigma_P ~dexp(1),
-                bP ~ dnorm(0, 0.5),
+                mu <- a + bP[P] + bC[C] + bX*X,
+                a ~ dnorm(0, 1),
+                bP ~ dnorm(19,0),
+                bC ~
+                bX ~ dnorm()
                 sigma ~ dexp(1))
 
-m1 <- ulam(flist, data = dat_sample, chains = 2, cores = 2)
+m2 <- ulam(flist, data = dat_sample, chains = 4, cores = 2)
 
 
 
 
 ```
+
+
 B ~ N(mu, sigma)
 mu ~ N(alpha[p],sigma[p]); p = participant 1..352
 

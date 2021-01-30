@@ -105,10 +105,16 @@ cs <- cbind(cs, MFT_mean = rowMeans(moral_found, na.rm = TRUE))
 #Correlations EAI vs NEP
 with(cs, cor.test(NEP_mean, likelyPEB_mean))
 with(cs, cor.test(EAI_mean, likelyPEB_mean))
+with(cs, cor.test(NEP_mean, thermo_mean))
+with(cs, cor.test(EAI_mean, thermo_mean))
 
 #Significance test of EAI vs NEP correlations vs likelyPEB
 r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
   with(cs, cor(NEP_mean, likelyPEB_mean))), n2=88)
+
+#Significance test of EAI vs NEP correlations vs likelyPEB
+r.test(r12=(with(cs, cor(EAI_mean, thermo_mean))), n=88, r34=(
+  with(cs, cor(NEP_mean, thermo_mean))), n2=88)
 
 #Correlations and significance compared to CADM
 
