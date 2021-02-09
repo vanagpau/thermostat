@@ -34,8 +34,9 @@ library(rethinking)
 ```{r}
 #setwd("E:/R files")
 #For Laptop work 
-setwd("/home/vanagpau/R/thermostat")
-#For Reading virtual machine setwd("/home/users/kl819459/Desktop/thermostat")
+#setwd("/home/vanagpau/R/thermostat")
+#For Reading virtual machine
+setwd("/home/users/kl819459/Desktop/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
@@ -200,7 +201,7 @@ irus_data <- left_join(irus_data, irus_data %>%
 
 #HYPOTHESIS 4 - add Before & After tags
 
-irus_data$df-saintervention <- NA
+irus_data$intervention <- NA
 attach(irus_data)
 irus_data$intervention[Date < as.Date("2020-02-14")] <- "Before"
 irus_data$intervention[Date > as.Date("2020-02-14")] <- "After"
@@ -256,7 +257,8 @@ irus_data <- left_join (irus_data, irus_data %>%
 
 irus_data <- left_join (irus_data, irus_data %>% 
   filter(!(Setpoint == 21 & hour(date_time) >= 7 & hour(date_time) <= 10)) %>%
-filter(Setpoint != 19) %>% filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>%
+filter(Setpoint != 19) %>% 
+  filter(Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01")) %>% 
   group_by(site_room) %>% 
   summarise(avg_sp_after_excdflt = mean(Setpoint)), by = "site_room")
 
