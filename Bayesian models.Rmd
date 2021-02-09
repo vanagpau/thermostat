@@ -476,7 +476,7 @@ flist <- alist (S ~ dnorm(mu, sigma),
                 bX ~ dnorm(0, 1),
                 sigma ~ dexp(1) )
 
-#m2 <- ulam(flist, data = dat, chains = 4, cores = 2)
+m2 <- ulam(flist, data = dat, chains = 4, cores = 2)
 
 save(m2, file = "m2.RData")
 
