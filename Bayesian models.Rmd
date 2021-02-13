@@ -26,7 +26,7 @@ library(naniar)
 library(nFactors)
 library(TTR)
 library(tidyquant)
-library(lme4)
+library(brms)
 library(rethinking)
 ```
 
@@ -34,9 +34,9 @@ library(rethinking)
 ```{r}
 #setwd("E:/R files")
 #For Laptop work 
-#setwd("/home/vanagpau/R/thermostat")
+setwd("/home/vanagpau/R/thermostat")
 #For Reading virtual machine
-setwd("/home/users/kl819459/Desktop/thermostat")
+#setwd("/home/users/kl819459/Desktop/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
@@ -395,7 +395,7 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ```
 
-## EXPORT FOR MODELLING
+## EXPORT FILES FOR MODELLING (if required)
 ```{r}
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write.csv(irus_data, file = "AdamIrusdata.csv")
@@ -431,16 +431,16 @@ df$Address <- as.integer(lapply(df$Name, function(x) cross_table$Code[match(x, c
 df$intervention <- ifelse(df$intervention == "Before",1,2)
 
 #Take sample of data to test models (faster)
-df_sample <- df[sample(nrow(df), 10000), ]
+df_sample <- df[sample(nrow(df), 50000), ]
 
 ```
 
-## Models
+## Running Models
 ```{r}
 
 # Behaviour, S = thermostat set-point at a given time-point
 # basic model - normal distribution, which depends firstly on participant;
-# Dependent variable is S = 'temp.c' (centred)
+# Dependent variable is S = 'temp.c' (centered)
 
 # Mixed-model to model how S depends on time, participant and effect of comms with external temp as co-variate
 
@@ -453,11 +453,11 @@ dat <- list(S = df$temp.c,
 T = df$time_elapsed, P = df$Address, C = df$intervention, X = df$external.z)
 
 #Model 1 with time only FULL DATA
-flist <- alist (S ~ dnorm(mu, sigma),
-                mu <- a + bT*T,
-                a ~ dnorm(19, 1.5),
-                bT ~ dnorm(0, 0.5),
-                sigma ~ dexp(1))
+# flist <- alist (S ~ dnorm(mu, sigma),
+#                 mu <- a + bT*T,
+#                 a ~ dnorm(19, 1.5),
+#                 bT ~ dnorm(0, 0.5),
+#                 sigma ~ dexp(1))
 
 # Don't run this unless you need to again - it's saved as m1
 # m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
@@ -466,21 +466,51 @@ flist <- alist (S ~ dnorm(mu, sigma),
 
 
 #Model 2 - SAMPLE data; depends on participant and intervention, controlling for external temperature
-flist <- alist (S ~ dnorm(mu, sigma),
-                mu <- a + bP[P] + bC[C] + bX*X,
-                a ~ dnorm(0, 1),
-                bP[P] ~ dnorm(mu_P,sigma_P),
-                mu_P ~ dnorm(0,1),
-                sigma_P ~ dexp(1),
-                bC[C] ~ dnorm(mu_C, sigma_C),
-                mu_C ~ dnorm(0,1),
-                sigma_C ~ dexp(1),
-                bX ~ dnorm(0, 1),
-                sigma ~ dexp(1) )
+# flist <- alist (S ~ dnorm(mu, sigma),
+#                 mu <- a + bP[P] + bC[C] + bX*X,
+#                 a ~ dnorm(0, 1),
+#                 bP[P] ~ dnorm(mu_P,sigma_P),
+#                 mu_P ~ dnorm(0,1),
+#                 sigma_P ~ dexp(1),
+#                 bC[C] ~ dnorm(mu_C, sigma_C),
+#                 mu_C ~ dnorm(0,1),
+#                 sigma_C ~ dexp(1),
+#                 bX ~ dnorm(0, 1),
+#                 sigma ~ dexp(1) )
 
-m2 <- ulam(flist, data = dat, chains = 4, cores = 2)
+#m2 <- ulam(flist, data = dat, chains = 4, cores = 2)
 
-save(m2, file = "m2.RData")
+#save(m2, file = "m2.RData")
+
+#Model 3: SAMPLE - model setpoint as a function of time, nested by participant
+
+#Hourly setpoint  ~ 1 + DAY +  (1+DAY|ID) 
+
+#flist <- alist (S ~ dnorm(mu, sigma),
+                # mu <- a + bT*T + bP[P],
+                # a ~ dnorm(0, .5),
+                # bT ~ dnorm(0,1),
+                # bP[P] ~ dnorm(mu_P,sigma_P),
+                # mu_P ~ dnorm(0,1),
+                # sigma_P ~ dexp(1),
+                # sigma ~ dexp(1) )
+
+#m3 <- ulam(flist, data = dat, chains = 2, cores = 2)
+
+# Fit Adam model using BRMS
+
+m4 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address),
+          data = df_sample, family = gaussian(),
+          prior = set_prior("normal(0,0.5)", class = "b"),
+          warmup = 1000, iter = 2000, chains = 4,
+          control = list(adapt_delta = 0.95))
+
+m5 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address),
+          data = df_sample, family = gaussian(),
+          prior = set_prior("horseshoe(1)"),
+          warmup = 1000, iter = 3000, chains = 2, cores = 2,
+          control = list(adapt_delta = 0.95))
+
 
 
 ```
