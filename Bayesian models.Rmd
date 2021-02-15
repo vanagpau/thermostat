@@ -5,9 +5,6 @@ date: "27/01/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 ## Libraries
 ```{r, message = FALSE}
 library(tidyverse)
@@ -396,7 +393,7 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 ```
 
 ## EXPORT FILES FOR MODELLING (if required)
-```{r}
+```{r, eval = FALSE}
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write.csv(irus_data, file = "AdamIrusdata.csv")
 
@@ -436,7 +433,7 @@ df_sample <- df[sample(nrow(df), 50000), ]
 ```
 
 ## Running Models
-```{r}
+```{r, eval = FALSE}
 
 # Behaviour, S = thermostat set-point at a given time-point
 # basic model - normal distribution, which depends firstly on participant;
