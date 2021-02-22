@@ -424,8 +424,8 @@ cross_table <- data.frame(Name = unique(df$Name),Code = seq(1:length(unique(df$N
 
 df$Address <- as.integer(lapply(df$Name, function(x) cross_table$Code[match(x, cross_table$Name)]))
 
-#Replace "Before" and "After" with 0's and 1's in df$intervention variable
-df$intervention <- ifelse(df$intervention == "Before",1,2)
+# Convert intervention variable into factor
+df$intervention <- factor(df$intervention, levels = c("Before", "After"))
 
 #Take sample of data to test models (faster)
 df_sample <- df[sample(nrow(df), 50000), ]
@@ -492,22 +492,22 @@ T = df$time_elapsed, P = df$Address, C = df$intervention, X = df$external.z)
                 # sigma_P ~ dexp(1),
                 # sigma ~ dexp(1) )
 
-#m3 <- ulam(flist, data = dat, chains = 2, cores = 2)
+# Plot mean temp setting over time
+df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2e4)
 
-# Fit Adam model using BRMS
+# Fit model using BRMS
 
-m4 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address),
-          data = df_sample, family = gaussian(),
-          prior = set_prior("normal(0,0.5)", class = "b"),
-          warmup = 1000, iter = 2000, chains = 4,
-          control = list(adapt_delta = 0.95))
-
-m5 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address),
-          data = df_sample, family = gaussian(),
+m3 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address) + external.z + intervention*Site,
+          data = df, family = gaussian(),
           prior = set_prior("horseshoe(1)"),
-          warmup = 1000, iter = 3000, chains = 2, cores = 2,
-          control = list(adapt_delta = 0.95))
+          warmup = 1000, iter = 3000, chains = 4, cores = 2,
+          control = list(adapt_delta = 0.95), file=("m3"))
 
+m4 <- brm(formula = temp.c ~ 1 + (1|Address),
+          data = df, family = gaussian(),
+          prior = set_prior("horseshoe(1)"),
+          warmup = 1000, iter = 3000, chains = 4, cores = 2,
+          control = list(adapt_delta = 0.95), file=("m4"))
 
 
 ```
