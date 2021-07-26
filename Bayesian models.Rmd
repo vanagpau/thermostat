@@ -31,7 +31,7 @@ library(rethinking)
 ```{r}
 #setwd("E:/R files")
 #For Laptop work 
-setwd("/home/vanagpau/R/thermostat")
+#setwd("/home/vanagpau/R/thermostat")
 # For new DELL
 setwd("C:/Users/paulv/Documents/R/thermostat")
 #For Reading virtual machine
