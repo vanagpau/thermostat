@@ -32,6 +32,8 @@ library(rethinking)
 #setwd("E:/R files")
 #For Laptop work 
 setwd("/home/vanagpau/R/thermostat")
+# For new DELL
+setwd("C:/Users/paulv/Documents/R/thermostat")
 #For Reading virtual machine
 #setwd("/home/users/kl819459/Desktop/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
