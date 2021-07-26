@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ## Libraries
-```{r, message = FALSE}
+```{r, message = FALSE, warnings = FALSE}
 library(tidyverse)
 library(data.table)
 library(psych)
