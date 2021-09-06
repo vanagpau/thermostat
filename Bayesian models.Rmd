@@ -11,10 +11,7 @@ library(tidyverse)
 library(data.table)
 library(psych)
 library(standardize)
-library(gridExtra)
-library(corrplot)
 library(GPArotation)
-library(RColorBrewer)
 library(lubridate)
 library(vroom)
 library(fasttime)
@@ -24,7 +21,8 @@ library(nFactors)
 library(TTR)
 library(tidyquant)
 library(brms)
-library(rethinking)
+library(lme4)
+
 ```
 
 ## Data set-up
@@ -417,8 +415,9 @@ df <- irus_data %>%
   filter(Date <= as.Date("2020-02-29")) %>%
   filter(Date != as.Date("2020-02-14")) %>% #remove 14th Feb as intervention time unknown
   filter(is.na(Setpoint) == 0) %>%
+  filter(Setpoint != 19) %>% #exclude all default values
   mutate(time_elapsed = as.numeric((date_time) - date_time[1])/3600) %>% #zero time clock and convert to hours
-  mutate(temp.c = Setpoint-19) %>% #Centering TEMP with defaults on 19
+  mutate(temp.c = (Setpoint - mean(Setpoint,  na.rm=T))/sd(Setpoint, na.rm=T)) %>% #standardise set-point temperature
   mutate(external.z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
 
 #Replace all unique room names (characters) with number for modelling
@@ -434,106 +433,40 @@ df_sample <- df[sample(nrow(df), 50000), ]
 
 ```
 
-## Running Models
+## Bayesian Models
 ```{r, eval = FALSE}
 
-# Behaviour, S = thermostat set-point at a given time-point
-# basic model - normal distribution, which depends firstly on participant;
-# Dependent variable is S = 'temp.c' (centered)
-
-# Mixed-model to model how S depends on time, participant and effect of comms with external temp as co-variate
-
-# first model with time only SAMPLE
-dat_sample <- list(S = df_sample$temp.c,
-T = df_sample$time_elapsed, P = df_sample$Address, C = df_sample$intervention, X = df_sample$external.z)
-
-#Create data list for FULL DATA modelling
-dat <- list(S = df$temp.c,
-T = df$time_elapsed, P = df$Address, C = df$intervention, X = df$external.z)
-
-#Model 1 with time only FULL DATA
-# flist <- alist (S ~ dnorm(mu, sigma),
-#                 mu <- a + bT*T,
-#                 a ~ dnorm(19, 1.5),
-#                 bT ~ dnorm(0, 0.5),
-#                 sigma ~ dexp(1))
-
-# Don't run this unless you need to again - it's saved as m1
-# m1 <- ulam(flist, data = dat, chains = 2, cores = 2)
-
-#load(m1, file = "m1.RData")
 
 
-#Model 2 - SAMPLE data; depends on participant and intervention, controlling for external temperature
-# flist <- alist (S ~ dnorm(mu, sigma),
-#                 mu <- a + bP[P] + bC[C] + bX*X,
-#                 a ~ dnorm(0, 1),
-#                 bP[P] ~ dnorm(mu_P,sigma_P),
-#                 mu_P ~ dnorm(0,1),
-#                 sigma_P ~ dexp(1),
-#                 bC[C] ~ dnorm(mu_C, sigma_C),
-#                 mu_C ~ dnorm(0,1),
-#                 sigma_C ~ dexp(1),
-#                 bX ~ dnorm(0, 1),
-#                 sigma ~ dexp(1) )
+# Mixed-model to model how temp.c depends on time as a random effect
+mm1 <- lmer(temp.c ~ (1+time_elapsed|Address), data = df)
 
-#m2 <- ulam(flist, data = dat, chains = 4, cores = 2)
-
-#save(m2, file = "m2.RData")
-
-#Model 3: SAMPLE - model setpoint as a function of time, nested by participant
-
-#Hourly setpoint  ~ 1 + DAY +  (1+DAY|ID) 
-
-#flist <- alist (S ~ dnorm(mu, sigma),
-                # mu <- a + bT*T + bP[P],
-                # a ~ dnorm(0, .5),
-                # bT ~ dnorm(0,1),
-                # bP[P] ~ dnorm(mu_P,sigma_P),
-                # mu_P ~ dnorm(0,1),
-                # sigma_P ~ dexp(1),
-                # sigma ~ dexp(1) )
+# Plot 
+df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5)
 
 # Plot mean temp setting over time
 df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2e4)
 
 # Fit model using BRMS
 
+bm1 <- brm(formula = temp.c ~ (1+time_elapsed|Address),
+          data = df_sample, warmup = 1000, iter = 3000, cores = 4,
+          file=("bm1"))
+
+
 m3 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address) + external.z + intervention*Site,
           data = df, family = gaussian(),
           prior = set_prior("horseshoe(1)"),
-          warmup = 1000, iter = 3000, chains = 4, cores = 2,
+          warmup = 1000, iter = 3000, chains = 4, cores = 4,
           control = list(adapt_delta = 0.95), file=("m3"))
 
 m4 <- brm(formula = temp.c ~ 1 + (1|Address),
           data = df, family = gaussian(),
           prior = set_prior("horseshoe(1)"),
-          warmup = 1000, iter = 3000, chains = 4, cores = 2,
+          warmup = 1000, iter = 3000, chains = 4, cores = 4,
           control = list(adapt_delta = 0.95), file=("m4"))
 
 
 ```
-
-
-B ~ N(mu, sigma)
-mu ~ N(alpha[p],sigma[p]); p = participant 1..352
-
-#which then depends, from the CADM model, on 3 proximal variables; HAB = habit, INT = intention, PBC =  perceived behavioural control
-alpha[p] ~ beta_HAB[p] + beta_INT[p] + beta_PBC[p]
-sigma[p] ~ exp(1)
-
-#Adaptive priors for mixed model
-beta_HAB ~ N(mu_hab, sigma_hab)
-beta_INT ~ N(mu_int, sigma_int)  
-beta_PBC ~ N(mu_pbc, sigma_pbc)
-
-#Weak priors for standardised variables
-mu_hab ~ N(0, 1.5)
-mu_int  ~ N(0, 1.5)
-mu_pbc ~ N(0, 1.5)
-sigma_hab ~ exp(1)
-sigma_int ~ exp(1)
-sigma_pbc  ~ exp(1)
-
 
 
