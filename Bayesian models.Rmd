@@ -453,6 +453,17 @@ bm1 <- brm(formula = temp.c ~ (1+time_elapsed|Address),
           data = df_sample, warmup = 1000, iter = 3000, cores = 4,
           file=("bm1"))
 
+#Modelling manipulation effect
+lm1 <- lm(temp.c ~ intervention, data = df)
+lm2 <- lm(temp.c ~ time_elapsed + intervention, data = df)
+
+bm2 <- brm(formula = temp.c ~ intervention,
+          data = df, cores = 4,
+          file=("bm2"), control = list(adapt_delta = 0.95),
+          file_refit = getOption("brms.file_refit", "on_change"))
+
+
+
 
 m3 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address) + external.z + intervention*Site,
           data = df, family = gaussian(),
