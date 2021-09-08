@@ -449,33 +449,25 @@ df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) 
 
 # Fit model using BRMS
 
-bm1 <- brm(formula = temp.c ~ (1+time_elapsed|Address),
-          data = df_sample, warmup = 1000, iter = 3000, cores = 4,
-          file=("bm1"))
+bm1 <- brm(formula = temp.c ~ (1+time_elapsed|Address), data = df,
+           warmup = 1000, iter = 3000, cores = 4, control = list(adapt_delta = 0.95),
+           file=("bm1"), file_refit = getOption("brms.file_refit", "on_change"))
 
 #Modelling manipulation effect
 lm1 <- lm(temp.c ~ intervention, data = df)
 lm2 <- lm(temp.c ~ time_elapsed + intervention, data = df)
 
+#need to re-run this model as accidently over-saved bm2 previously
 bm2 <- brm(formula = temp.c ~ intervention,
           data = df, cores = 4,
           file=("bm2"), control = list(adapt_delta = 0.95),
           file_refit = getOption("brms.file_refit", "on_change"))
 
+bm3 <- brm(formula = temp.c ~ intervention + (1+time_elapsed|Address),
+          data = df, cores = 4, warmup = 1500, iter = 4000,
+          file=("bm3"), control = list(adapt_delta = 0.95),
+          file_refit = getOption("brms.file_refit", "on_change"))
 
-
-
-m3 <- brm(formula = temp.c ~ time_elapsed + (1+time_elapsed|Address) + external.z + intervention*Site,
-          data = df, family = gaussian(),
-          prior = set_prior("horseshoe(1)"),
-          warmup = 1000, iter = 3000, chains = 4, cores = 4,
-          control = list(adapt_delta = 0.95), file=("m3"))
-
-m4 <- brm(formula = temp.c ~ 1 + (1|Address),
-          data = df, family = gaussian(),
-          prior = set_prior("horseshoe(1)"),
-          warmup = 1000, iter = 3000, chains = 4, cores = 4,
-          control = list(adapt_delta = 0.95), file=("m4"))
 
 
 ```
