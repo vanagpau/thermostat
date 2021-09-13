@@ -22,11 +22,13 @@ library(TTR)
 library(tidyquant)
 library(brms)
 library(lme4)
+library(bayesplot)
+library(minqa)
 
 ```
 
 ## Data set-up
-```{r}
+```{r, eval=FALSE}
 #setwd("E:/R files")
 #For Laptop work 
 #setwd("/home/vanagpau/R/thermostat")
@@ -392,33 +394,41 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ```
 
-## EXPORT FILES FOR MODELLING (if required)
+## EXPORT FILES FOR QUICK ACCESS (if required)
 ```{r, eval = FALSE}
 # main data file for longitudinal modelling (LARGE; 700k + rows)
-write.csv(irus_data, file = "AdamIrusdata.csv")
+write_csv(irus_data, file = "IrusData.csv")
 
 # data file for matching effect to rooms (Small; 88 rows)
-adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
+survey <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
     group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
        `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
        external = mean(Ext_temp_celsius)),
     by = "site_room")
 
-write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
+write_csv(survey, file = "SurveyData.csv")
 ```
 
-## CREATE DATA-FRAME (df) for modelling
+## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
 ```{r}
+
+#Import csv's
+irus_data <- read_csv("IrusData.csv")
+
+
+
 #Create new data-frame with appropriate variables
 df <- irus_data %>%
   filter(Date >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
   filter(Date <= as.Date("2020-02-29")) %>%
   filter(Date != as.Date("2020-02-14")) %>% #remove 14th Feb as intervention time unknown
   filter(is.na(Setpoint) == 0) %>%
-  filter(Setpoint != 19) %>% #exclude all default values
+  #filter(Setpoint != 19) %>% #exclude all default values
   mutate(time_elapsed = as.numeric((date_time) - date_time[1])/3600) %>% #zero time clock and convert to hours
   mutate(temp.c = (Setpoint - mean(Setpoint,  na.rm=T))/sd(Setpoint, na.rm=T)) %>% #standardise set-point temperature
   mutate(external.z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
+
+
 
 #Replace all unique room names (characters) with number for modelling
 cross_table <- data.frame(Name = unique(df$Name),Code = seq(1:length(unique(df$Name))))
@@ -431,33 +441,104 @@ df$intervention <- factor(df$intervention, levels = c("Before", "After"))
 #Take sample of data to test models (faster)
 df_sample <- df[sample(nrow(df), 50000), ]
 
+#Exclude temp = 19 default values
+df_xd <- df %>% filter(Setpoint != 19)
+
 ```
+
+## Mixed models
+```{r, eval = FALSE}
+
+#Modelling manipulation effect - linear models
+lm1 <- lm(temp.c ~ intervention, data = df)
+summary(lm1)
+lm2 <- lm(temp.c ~ time_elapsed_r + intervention, data = df)
+summary(lm2)
+lm3 <- lm(temp.c ~ time_elapsed_r + intervention + external.z, data = df)
+summary(lm3)
+
+
+# histogram of temp distributions - full data frame and excluding defaults 
+df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) 
+df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) 
+
+# Plot mean temp setting over time
+df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2e4)
+df_xd %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df_xd$intervention) + ylim(-2,5) + xlim(0,2e4)
+
+
+# Mixed-model to model how temp.c depends on time as a random effect does not converge
+mm1 <- lmer(temp.c ~ (time_elapsed|Address), data = df)
+mmxd1 <- lmer(temp.c ~ (time_elapsed|Address), data = df_xd)
+
+# checks at https://rstudio-pubs-static.s3.amazonaws.com/33653_57fc7b8e5d484c909b615d8633c01d51.html
+
+#check singularity - not a problem
+tt <- getME(mm1,"theta")
+ll <- getME(mm1,"lower")
+min(tt[ll==0])
+
+# change optimisation algorithm - still does not converge
+mm1 <- lmer(temp.c ~ (time_elapsed|Address), data = df, control = lmerControl(optimizer = "bobyqa"))
+
+#rescale time_elapsed variable - that works!
+df$time_elapsed_r <- df$time_elapsed/300
+df_xd$time_elapsed_r <- df_xd$time_elapsed/300
+
+#Including defaults
+mm1 <- lmer(temp.c ~ (time_elapsed_r|Address), data = df)
+
+#Excluding defaults
+mmxd1 <- lmer(temp.c ~ (time_elapsed_r|Address), data = df_xd)
+
+# So let's try some other models (including defaults)
+
+mm2 <- lmer(temp.c ~ time_elapsed_r + (time_elapsed_r|Address), data = df)
+summary(mm2)
+
+# Controlling for external temp
+mm3 <- lmer(temp.c ~ time_elapsed_r + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
+summary(mm3)
+
+# Controlling for intervention
+mm4 <- lmer(temp.c ~ time_elapsed_r + intervention + (time_elapsed_r|Address), data = df)
+summary(mm4)
+
+#Then ext temp and intervention together
+mm5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
+summary(mm5)
+
+#Check for interaction effect of Site*Intervention
+mm6 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
+summary(mm6)
+
+#Adam' models
+#Random effects of time, within room and site implicitly nested - convergence and "degenerate Hessian"!
+mm7 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df)
+summary(mm7)
+
+
+
+
+```
+
+
 
 ## Bayesian Models
 ```{r, eval = FALSE}
 
 
-
-# Mixed-model to model how temp.c depends on time as a random effect
-mm1 <- lmer(temp.c ~ (1+time_elapsed|Address), data = df)
-
-# Plot 
-df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5)
-
-# Plot mean temp setting over time
-df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2e4)
-
 # Fit model using BRMS
 
-bm1 <- brm(formula = temp.c ~ (1+time_elapsed|Address), data = df,
+# NULL model
+
+bm1 <- brm(formula = temp.c ~ (1+time_elapsed_r|Address), data = df,
            warmup = 1000, iter = 3000, cores = 4, control = list(adapt_delta = 0.95),
            file=("bm1"), file_refit = getOption("brms.file_refit", "on_change"))
 
-#Modelling manipulation effect
-lm1 <- lm(temp.c ~ intervention, data = df)
-lm2 <- lm(temp.c ~ time_elapsed + intervention, data = df)
 
-#need to re-run this model as accidently over-saved bm2 previously
+
+#temp depends on intervention
 bm2 <- brm(formula = temp.c ~ intervention,
           data = df, cores = 4,
           file=("bm2"), control = list(adapt_delta = 0.95),
@@ -468,7 +549,26 @@ bm3 <- brm(formula = temp.c ~ intervention + (1+time_elapsed|Address),
           file=("bm3"), control = list(adapt_delta = 0.95),
           file_refit = getOption("brms.file_refit", "on_change"))
 
+n_divergent <- function(x) {
+    stopifnot(is(x, "brmsfit"))
+    out <- lapply(x$fit@sim$samples, function(y) 
+        sum(attr(y, "sampler_params")[["divergent__"]]))
+    sum(unlist(out))
+}
 
+n_divergent(bm1)
+n_divergent(bm2)
+n_divergent(bm3)
+
+#model visualisation and diagnostics
+posterior1 <- as.array(bm1)
+
+# Trace plot of Linear Regression, define variables to plot via pars flag
+mcmc_trace(posterior1,  pars = c("b_Intercept", "sigma"), 
+           n_warmup = 1000, facet_args = list(ncol = 2, labeller = label_parsed))
+
+mcmc_acf(posterior1, pars = c("b_Intercept", "sigma"), 
+         lags = 15)
 
 ```
 
