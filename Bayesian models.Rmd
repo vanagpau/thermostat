@@ -25,10 +25,13 @@ library(lme4)
 library(bayesplot)
 library(minqa)
 
+# For new DELL
+setwd("C:/Users/paulv/Documents/R/thermostat")
+
 ```
 
 ## Data set-up
-```{r, eval=FALSE}
+```{r, eval=FALSE, echo = FALSE}
 #setwd("E:/R files")
 #For Laptop work 
 #setwd("/home/vanagpau/R/thermostat")
@@ -395,7 +398,7 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 ```
 
 ## EXPORT FILES FOR QUICK ACCESS (if required)
-```{r, eval = FALSE}
+```{r, eval = FALSE, echo=FALSE}
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write_csv(irus_data, file = "IrusData.csv")
 
@@ -444,10 +447,14 @@ df_sample <- df[sample(nrow(df), 50000), ]
 #Exclude temp = 19 default values
 df_xd <- df %>% filter(Setpoint != 19)
 
+#rescale time_elapsed variable - that works!
+df$time_elapsed_r <- df$time_elapsed/300
+df_xd$time_elapsed_r <- df_xd$time_elapsed/300
+
 ```
 
 ## Mixed models
-```{r, eval = FALSE}
+```{r}
 
 #Modelling manipulation effect - linear models
 lm1 <- lm(temp.c ~ intervention, data = df)
@@ -463,7 +470,7 @@ df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5)
 df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) 
 
 # Plot mean temp setting over time
-df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2e4)
+df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2.5e5)
 df_xd %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df_xd$intervention) + ylim(-2,5) + xlim(0,2e4)
 
 
@@ -481,41 +488,54 @@ min(tt[ll==0])
 # change optimisation algorithm - still does not converge
 mm1 <- lmer(temp.c ~ (time_elapsed|Address), data = df, control = lmerControl(optimizer = "bobyqa"))
 
-#rescale time_elapsed variable - that works!
-df$time_elapsed_r <- df$time_elapsed/300
-df_xd$time_elapsed_r <- df_xd$time_elapsed/300
+# WITH rescaled time axis, the models converge..
 
 #Including defaults
 mm1 <- lmer(temp.c ~ (time_elapsed_r|Address), data = df)
+summary(mm1)
 
 #Excluding defaults
 mmxd1 <- lmer(temp.c ~ (time_elapsed_r|Address), data = df_xd)
+summary(mmxd1)
 
 # So let's try some other models (including defaults)
-
+# No significant effect of time as a fixed effect (t value < 1)
 mm2 <- lmer(temp.c ~ time_elapsed_r + (time_elapsed_r|Address), data = df)
 summary(mm2)
 
 # Controlling for external temp
+# Significant effect of external temp. - slightly greater effect of time 
 mm3 <- lmer(temp.c ~ time_elapsed_r + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 summary(mm3)
 
-# Controlling for intervention
-mm4 <- lmer(temp.c ~ time_elapsed_r + intervention + (time_elapsed_r|Address), data = df)
-summary(mm4)
-
 #Then ext temp and intervention together
+# Shows intervention has an effect too
 mm5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 summary(mm5)
 
 #Check for interaction effect of Site*Intervention
+#Shows that the intervention effect is driven largely (wholly??) by WARNEFORD site
+# Note: from memory we found this before - there was a big effect in one hall and not the other
+# personally I doubt this was solely due to a few words different on the poster, but that's for discussion
 mm6 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 summary(mm6)
 
-#Adam' models
-#Random effects of time, within room and site implicitly nested - convergence and "degenerate Hessian"!
-mm7 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df)
+
+#Random effects of time, within room and site implicitly nested 
+mm7 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df)
 summary(mm7)
+
+# try with bobyqa - that works!
+#doesn't really tell us anything new?
+mm7b <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
+summary(mm7b)
+
+#Random effects of time and intervention implicitly nested within Site and Room
+#fails to converge degenerate Hessian negaitve eigenvalues and unable to evaluate gradient - too complex?
+mm8 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r+intervention|Address) + (time_elapsed_r+intervention|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
+summary(mm8)
+
+
 
 
 
@@ -532,18 +552,22 @@ summary(mm7)
 
 # NULL model
 
-bm1 <- brm(formula = temp.c ~ (1+time_elapsed_r|Address), data = df,
+# Initial null model - intercept only - does converge
+bm1 <- brm(formula = temp.c ~ (time_elapsed|Address), data = df,
            warmup = 1000, iter = 3000, cores = 4, control = list(adapt_delta = 0.95),
            file=("bm1"), file_refit = getOption("brms.file_refit", "on_change"))
 
+#NULL model with transposed time - NOT yet FIT
+bm1r <- brm(formula = temp.c ~ time_elapsed_r + (time_elapsed_r|Address), data = df,
+           file=("bm1r"), file_refit = getOption("brms.file_refit", "on_change"))
 
-
-#temp depends on intervention
+#temp depends on intervention - model COMPLETE
 bm2 <- brm(formula = temp.c ~ intervention,
           data = df, cores = 4,
           file=("bm2"), control = list(adapt_delta = 0.95),
           file_refit = getOption("brms.file_refit", "on_change"))
 
+#temp depends on intervention - model DOES NOT CONVERGE (YET)
 bm3 <- brm(formula = temp.c ~ intervention + (1+time_elapsed|Address),
           data = df, cores = 4, warmup = 1500, iter = 4000,
           file=("bm3"), control = list(adapt_delta = 0.95),
