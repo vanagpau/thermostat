@@ -583,7 +583,7 @@ summary(model_OD2)
 # Warning: clmm2 may not have converged:
 #   optimizer 'ucminf' terminated with max|gradient|: 60.803516159627
 
-saveRDS(model_OD2, file = "model_OD2")
+saveRDS(model_OD2, file = "model_OD2.rds")
 #can restore using readRDS
 
 
