@@ -570,6 +570,32 @@ p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 ci <- confint.default(model_OD1)
 exp(cbind("Odds ratio" = coef(model_OD1), ci))
 
+#convert Address to factor
+df$Address <- factor(df$Address)
+#same for Site
+df$Site <- factor(df$Site)
+
+#Fit random effect grouping under participant using clmm2 from ordinal package
+model_OD2 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius,
+                          random = Address, data = df, Hess=TRUE, nAGQ = 1)
+summary(model_OD2)
+
+# Warning: clmm2 may not have converged:
+#   optimizer 'ucminf' terminated with max|gradient|: 60.803516159627
+
+saveRDS(model_OD2, file = "model_OD2")
+#can restore using readRDS
+
+
+```
+
+## Survey data
+```{r}
+#create new variable = moralisation from Q8_7 and Q8_9
+cs <- cs %>% rowwise() %>% mutate(moralisation = mean(c(Q8_7, Q8_9)))
+
+
+
 
 ```
 
