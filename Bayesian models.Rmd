@@ -7,7 +7,7 @@ output: html_document
 
 ## Libraries
 ```{r, message = FALSE, warnings = FALSE}
-library(tidyverse)
+
 library(data.table)
 library(psych)
 library(standardize)
@@ -23,7 +23,9 @@ library(tidyquant)
 library(brms)
 library(lme4)
 library(bayesplot)
+library(MASS)
 library(minqa)
+library(tidyverse)
 
 # For new DELL
 setwd("C:/Users/paulv/Documents/R/thermostat")
@@ -409,7 +411,7 @@ survey <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% 
        external = mean(Ext_temp_celsius)),
     by = "site_room")
 
-write_csv(survey, file = "SurveyData.csv")
+write.csv(survey, file = "SurveyData.csv", row.names = FALSE)
 ```
 
 ## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
@@ -417,10 +419,10 @@ write_csv(survey, file = "SurveyData.csv")
 
 #Import csv's
 irus_data <- read_csv("IrusData.csv")
+cs <- read_csv("SurveyData.csv")
 
 
-
-#Create new data-frame with appropriate variables
+#Create new data-frame for temp modelling with appropriate variables
 df <- irus_data %>%
   filter(Date >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
   filter(Date <= as.Date("2020-02-29")) %>%
@@ -431,8 +433,6 @@ df <- irus_data %>%
   mutate(temp.c = (Setpoint - mean(Setpoint,  na.rm=T))/sd(Setpoint, na.rm=T)) %>% #standardise set-point temperature
   mutate(external.z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
 
-
-
 #Replace all unique room names (characters) with number for modelling
 cross_table <- data.frame(Name = unique(df$Name),Code = seq(1:length(unique(df$Name))))
 
@@ -441,8 +441,8 @@ df$Address <- as.integer(lapply(df$Name, function(x) cross_table$Code[match(x, c
 # Convert intervention variable into factor
 df$intervention <- factor(df$intervention, levels = c("Before", "After"))
 
-#Take sample of data to test models (faster)
-df_sample <- df[sample(nrow(df), 50000), ]
+#Take sample of data to test models (faster?)
+#df_sample <- df[sample(nrow(df), 50000), ]
 
 #Exclude temp = 19 default values
 df_xd <- df %>% filter(Setpoint != 19)
@@ -526,14 +526,14 @@ mm7 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_el
 summary(mm7)
 
 # try with bobyqa - that works!
-#doesn't really tell us anything new?
+#doesn't really tell us anything new
 mm7b <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
 summary(mm7b)
 
 #Random effects of time and intervention implicitly nested within Site and Room
-#fails to converge degenerate Hessian negaitve eigenvalues and unable to evaluate gradient - too complex?
-mm8 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r+intervention|Address) + (time_elapsed_r+intervention|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
-summary(mm8)
+#boundary (singular) fit: see ?isSingular - too complex?
+#mm8 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r+intervention|Address) + (time_elapsed_r+intervention|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
+#summary(mm8)
 
 
 
@@ -542,6 +542,36 @@ summary(mm8)
 
 ```
 
+
+## Ordinal models for multi-nomial (categorical) DV
+```{r}
+
+#Add outcome variable to dataframe
+df$behaviour <- NA
+df$behaviour[df$Setpoint == 19] = "default"
+df$behaviour[df$Setpoint < 19] = "lower"
+df$behaviour[df$Setpoint > 19] = "higher"
+df$behaviour <- factor(df$behaviour, ordered = TRUE, levels = c("lower", "default", "higher"))
+
+
+# Ordinal dependent variable models from https://rpubs.com/rslbliss/r_logistic_ws
+
+# Model 1
+model_OD1 <- polr(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius, data = df, Hess=TRUE)
+summary(model_OD1)
+
+## calculate and store p values
+ctable <- coef(summary(model_OD1))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+## combined table
+(ctable <- cbind(ctable, "p value" = p))
+
+## odds ratios and confidence intervals
+ci <- confint.default(model_OD1)
+exp(cbind("Odds ratio" = coef(model_OD1), ci))
+
+
+```
 
 
 ## Bayesian Models
