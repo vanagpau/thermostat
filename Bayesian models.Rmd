@@ -32,7 +32,7 @@ setwd("C:/Users/paulv/Documents/R/thermostat")
 
 ```
 
-## Data set-up
+## Data set-up (from dissertation analysis.. additions are in IMPORT/CREATE DATA-FRAME section below)
 ```{r, eval=FALSE, echo = FALSE}
 #setwd("E:/R files")
 #For Laptop work 
@@ -397,6 +397,9 @@ cs <- cs %>% mutate(PBC_sz = as.numeric(scale(PBC)))
 cs <- cs %>% mutate(BSCS_mean_sz = as.numeric(scale(BSCS_mean)))
 cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orientation`)))
 
+
+
+
 ```
 
 ## EXPORT FILES FOR QUICK ACCESS (if required)
@@ -422,7 +425,7 @@ irus_data <- read_csv("IrusData.csv")
 cs <- read_csv("SurveyData.csv")
 
 
-#Create new data-frame for temp modelling with appropriate variables
+#Create new data-frame for temperature modelling with appropriate variables
 df <- irus_data %>%
   filter(Date >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
   filter(Date <= as.Date("2020-02-29")) %>%
@@ -444,12 +447,26 @@ df$intervention <- factor(df$intervention, levels = c("Before", "After"))
 #Take sample of data to test models (faster?)
 #df_sample <- df[sample(nrow(df), 50000), ]
 
-#Exclude temp = 19 default values
+#Dataframe excluding temp = 19 default values
 df_xd <- df %>% filter(Setpoint != 19)
 
 #rescale time_elapsed variable - that works!
 df$time_elapsed_r <- df$time_elapsed/300
 df_xd$time_elapsed_r <- df_xd$time_elapsed/300
+
+#create moralisation score
+#create new variable = moralisation from Q8_7 and Q8_9
+cs <- cs %>% rowwise() %>% mutate(moralisation = mean(c(Q8_7, Q8_9)))
+#standardise
+cs$moralisation.z <- (cs$moralisation - mean(cs$moralisation))/sd(cs$moralisation)
+
+
+#Add survey data (cs) variables to time-series dataframe (df)
+
+df <- left_join(irus_data, cs[,c("site_room", "Habit_sz")], by = "site_room")
+
+df <- left_join(irus_data, cs[,c("site_room", "PBC_sz")], by = "site_room")
+
 
 ```
 
@@ -591,9 +608,54 @@ saveRDS(model_OD2, file = "model_OD2.rds")
 
 ## Survey data
 ```{r}
-#create new variable = moralisation from Q8_7 and Q8_9
-cs <- cs %>% rowwise() %>% mutate(moralisation = mean(c(Q8_7, Q8_9)))
 
+
+####Manipulation effect in sub-sample with questionnaire data
+#NO EXCLUSIONS
+m1 <- lmer(TEMP.C ~ 1 + DAY + (1|ResponseId), data=d)
+m2 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
+m3 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
+m4 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
+m5 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4, m5)
+
+#EXCLUSIONS 
+m1 <- lmer(TEMPEXCL ~ 1 + DAY + (1|ResponseId), data=d)
+m2 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
+m3 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
+m4 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
+m5 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+tab_model(m1, m2, m3, m4, m5)
+
+#Given that the manipulation effect doesn't hold up in the questionnaire sub-sample
+#best to just focus on whether questionnaire data predicts thermostat usage at all
+
+#these variables seem to have no effect 
+#OK to just list off the variables that didn't predict thermo setting rather than showing all the models
+m1 <- lmer(TEMPEXCL ~ 1 + EAI_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + NEP_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + PEB_activist_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + MAC_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + MFT_mean_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + Habit_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + SocialNorm_sz + DAY + (1|ResponseId),data=d)
+m1 <- lmer(TEMPEXCL ~ 1 + BSCS_mean_sz + DAY + (1|ResponseId),data=d)
+
+#these variables have some effect: MORALATT.Z PEB_pragmatist_sz Intention_sz PBC_sz Consequences.Z 
+#so I would present them - especially moral attitudes and consequences (as I think they are the strongest effects 
+#But you should double check that :)
+m1 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + DAY + (1|ResponseId),data=d)
+
+m2 <- lmer(TEMPEXCL ~ 1 + Intention_sz + DAY + (1|ResponseId),data=d)
+
+m3 <- lmer(TEMPEXCL ~ 1 + PBC_sz + DAY + (1|ResponseId),data=d)
+
+m4 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + DAY + (1|ResponseId),data=d)
+tab_model(m1, m2, m3, m4)
+
+m5 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + PBC_sz + Intention_sz + CONSEQUENCES.Z + DAY + EXTERNAL.Z+ (1|ResponseId),data=d)
+summary(m5)
+tab_model(m5)
 
 
 
