@@ -34,13 +34,7 @@ setwd("C:/Users/paulv/Documents/R/thermostat")
 
 ## Data set-up (from dissertation analysis.. additions are in IMPORT/CREATE DATA-FRAME section below)
 ```{r, eval=FALSE, echo = FALSE}
-#setwd("E:/R files")
-#For Laptop work 
-#setwd("/home/vanagpau/R/thermostat")
-# For new DELL
-setwd("C:/Users/paulv/Documents/R/thermostat")
-#For Reading virtual machine
-#setwd("/home/users/kl819459/Desktop/thermostat")
+
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
 as_tibble (VEB)
@@ -404,17 +398,13 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ## EXPORT FILES FOR QUICK ACCESS (if required)
 ```{r, eval = FALSE, echo=FALSE}
+getwd()
+
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write_csv(irus_data, file = "IrusData.csv")
 
-# data file for matching effect to rooms (Small; 88 rows)
-survey <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
-    group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
-       external = mean(Ext_temp_celsius)),
-    by = "site_room")
-
-write.csv(survey, file = "SurveyData.csv", row.names = FALSE)
+# data file for survey data (Small; 88 rows)
+write_csv(cs, file = "SurveyData.csv")
 ```
 
 ## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
@@ -460,12 +450,19 @@ cs <- cs %>% rowwise() %>% mutate(moralisation = mean(c(Q8_7, Q8_9)))
 #standardise
 cs$moralisation.z <- (cs$moralisation - mean(cs$moralisation))/sd(cs$moralisation)
 
+#Count instances of room numbers - there is one duplicate in Crescent - Room L04F
+data.frame(table(cs$site_room))
 
-#Add survey data (cs) variables to time-series dataframe (df)
 
-df <- left_join(irus_data, cs[,c("site_room", "Habit_sz")], by = "site_room")
+#Create survey data data-frame by matching all completed surveys (cs) data to main df
 
-df <- left_join(irus_data, cs[,c("site_room", "PBC_sz")], by = "site_room")
+#df_survey <- left_join(df, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
+                                  # "AscriptionResponsibility_sz", "SocialNorm_sz",
+                                  # "AwarenessConsequences_sz", "PEB_pragmatist_sz",
+                                  # "PEB_activist_sz", "NEP_mean")], by = "site_room")
+
+
+
 
 
 ```
