@@ -25,6 +25,7 @@ library(lme4)
 library(bayesplot)
 library(MASS)
 library(minqa)
+library(lmerTest)
 library(tidyverse)
 
 # For new DELL
@@ -398,7 +399,6 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ## EXPORT FILES FOR QUICK ACCESS (if required)
 ```{r, eval = FALSE, echo=FALSE}
-getwd()
 
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write_csv(irus_data, file = "IrusData.csv")
@@ -411,9 +411,8 @@ write_csv(cs, file = "SurveyData.csv")
 ```{r}
 
 #Import csv's
-irus_data <- read_csv("IrusData.csv")
-cs <- read_csv("SurveyData.csv")
-
+irus_data <- read.csv("IrusData.csv")
+cs <- read.csv("SurveyData.csv")
 
 #Create new data-frame for temperature modelling with appropriate variables
 df <- irus_data %>%
@@ -428,7 +427,6 @@ df <- irus_data %>%
 
 #Replace all unique room names (characters) with number for modelling
 cross_table <- data.frame(Name = unique(df$Name),Code = seq(1:length(unique(df$Name))))
-
 df$Address <- as.integer(lapply(df$Name, function(x) cross_table$Code[match(x, cross_table$Name)]))
 
 # Convert intervention variable into factor
@@ -452,16 +450,25 @@ cs$moralisation.z <- (cs$moralisation - mean(cs$moralisation))/sd(cs$moralisatio
 
 #Count instances of room numbers - there is one duplicate in Crescent - Room L04F
 data.frame(table(cs$site_room))
+#remove duplicate room - CRESCENTL04F
+cs <- cs %>% filter(site_room != "CRESCENTL04F")
+
+#Create survey data data-frame by matching all completed surveys (cs) variables to main df only for those that have completed
+
+df_survey <- inner_join(df, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
+                                   "AscriptionResponsibility_sz", "SocialNorm_sz",
+                                   "AwarenessConsequences_sz", "PEB_pragmatist_sz",
+                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
+                        by = "site_room")
+df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
+                                   "AscriptionResponsibility_sz", "SocialNorm_sz",
+                                   "AwarenessConsequences_sz", "PEB_pragmatist_sz",
+                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
+                           by = "site_room")
 
 
-#Create survey data data-frame by matching all completed surveys (cs) data to main df
-
-#df_survey <- left_join(df, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
-                                  # "AscriptionResponsibility_sz", "SocialNorm_sz",
-                                  # "AwarenessConsequences_sz", "PEB_pragmatist_sz",
-                                  # "PEB_activist_sz", "NEP_mean")], by = "site_room")
-
-
+# write_csv(irus_data, file = "IrusData.csv")
+# write_csv(cs, file = "SurveyData.csv")
 
 
 
@@ -605,56 +612,69 @@ saveRDS(model_OD2, file = "model_OD2.rds")
 
 ## Survey data
 ```{r}
-
+lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 
 ####Manipulation effect in sub-sample with questionnaire data
 #NO EXCLUSIONS
-m1 <- lmer(TEMP.C ~ 1 + DAY + (1|ResponseId), data=d)
-m2 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
-m3 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
-m4 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
-m5 <- lmer(TEMP.C ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+m1 <- lmer(temp.c ~ 1 + time_elapsed_r + (time_elapsed_r|site_room), data=df_survey)
+m2 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+m3 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+m4 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+m5 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
 tab_model(m1, m2, m3, m4, m5)
 
 #EXCLUSIONS 
-m1 <- lmer(TEMPEXCL ~ 1 + DAY + (1|ResponseId), data=d)
-m2 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + (1|ResponseId), data=d)
-m3 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + (1|ResponseId), data=d)
-m4 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION + SITE + (1|ResponseId), data=d)
-m5 <- lmer(TEMPEXCL ~ 1 + DAY + EXTERNAL.Z + MANIPULATION*SITE + (1|ResponseId), data=d)
+m1 <- lmer(temp.c ~ 1 + time_elapsed_r + (time_elapsed_r|site_room), data=df_survey_xd)
+m2 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
+m3 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
+m4 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + Site + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
+m5 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
 tab_model(m1, m2, m3, m4, m5)
 
-#Given that the manipulation effect doesn't hold up in the questionnaire sub-sample
-#best to just focus on whether questionnaire data predicts thermostat usage at all
+
 
 #these variables seem to have no effect 
-#OK to just list off the variables that didn't predict thermo setting rather than showing all the models
-m1 <- lmer(TEMPEXCL ~ 1 + EAI_mean_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + NEP_mean_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + PEB_activist_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + MAC_mean_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + MFT_mean_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + Habit_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + SocialNorm_sz + DAY + (1|ResponseId),data=d)
-m1 <- lmer(TEMPEXCL ~ 1 + BSCS_mean_sz + DAY + (1|ResponseId),data=d)
 
-#these variables have some effect: MORALATT.Z PEB_pragmatist_sz Intention_sz PBC_sz Consequences.Z 
-#so I would present them - especially moral attitudes and consequences (as I think they are the strongest effects 
-#But you should double check that :)
-m1 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + DAY + (1|ResponseId),data=d)
+m1 <- lmer(temp.c ~ 1 + NEP_mean_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + PEB_activist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + PEB_pragmatist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + Habit_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + SocialNorm_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
 
-m2 <- lmer(TEMPEXCL ~ 1 + Intention_sz + DAY + (1|ResponseId),data=d)
+#These variables are all p < .05 - strongest are intention and moralisation
+m1 <- lmer(temp.c ~ 1 + AwarenessConsequences_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + AscriptionResponsibility_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + PBC_sz + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m1 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
 
-m3 <- lmer(TEMPEXCL ~ 1 + PBC_sz + DAY + (1|ResponseId),data=d)
+#In multi-variate models only INTENTION is significant
+m2 <- lmer(temp.c ~ 1 + time_elapsed_r + AwarenessConsequences_sz + AscriptionResponsibility_sz +
+             PBC_sz + moralisation.z + Intention_sz + (time_elapsed_r|site_room),data=df_survey)
+summary(m2)
+tab_model(m2)
 
-m4 <- lmer(TEMPEXCL ~ 1 + CONSEQUENCES.Z + DAY + (1|ResponseId),data=d)
-tab_model(m1, m2, m3, m4)
+# Excluding Intention, Moralisation is still not significant
+m3 <- lmer(temp.c ~ 1 + time_elapsed_r + AwarenessConsequences_sz + AscriptionResponsibility_sz +
+             PBC_sz + moralisation.z + (time_elapsed_r|site_room),data=df_survey)
+summary(m3)
+tab_model(m3)
 
-m5 <- lmer(TEMPEXCL ~ 1 + MORALATT.Z + PBC_sz + Intention_sz + CONSEQUENCES.Z + DAY + EXTERNAL.Z+ (1|ResponseId),data=d)
-summary(m5)
-tab_model(m5)
-
-
+# Same result on excl. default data
+m4 <- lmer(temp.c ~ 1 + time_elapsed_r + AwarenessConsequences_sz + AscriptionResponsibility_sz +
+             PBC_sz + moralisation.z + (time_elapsed_r|site_room),data=df_survey_xd)
+summary(m4)
+tab_model(m4)
 
 ```
 
