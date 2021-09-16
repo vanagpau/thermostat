@@ -26,6 +26,7 @@ library(bayesplot)
 library(MASS)
 library(minqa)
 library(lmerTest)
+library(GLMMadaptive)
 library(tidyverse)
 
 # For new DELL
@@ -414,6 +415,9 @@ write_csv(cs, file = "SurveyData.csv")
 irus_data <- read.csv("IrusData.csv")
 cs <- read.csv("SurveyData.csv")
 
+#Convert date_time variable to correct to POSIXt format
+irus_data$date_time <- as_datetime(irus_data$date_time)
+
 #Create new data-frame for temperature modelling with appropriate variables
 df <- irus_data %>%
   filter(Date >= as.Date("2020-02-01")) %>%  #dropping all data points before Feb 1
@@ -596,17 +600,44 @@ df$Address <- factor(df$Address)
 #same for Site
 df$Site <- factor(df$Site)
 
+## Attempt to fit Ordinal model with random effects - this attempt didn't work
+
 #Fit random effect grouping under participant using clmm2 from ordinal package
-model_OD2 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius,
-                          random = Address, data = df, Hess=TRUE, nAGQ = 1)
-summary(model_OD2)
+# model_OD2 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius,
+#                           random = Address, data = df, Hess=TRUE, nAGQ = 1)
+# summary(model_OD2)
 
 # Warning: clmm2 may not have converged:
 #   optimizer 'ucminf' terminated with max|gradient|: 60.803516159627
 
-saveRDS(model_OD2, file = "model_OD2.rds")
-#can restore using readRDS
+#saveRDS(model_OD2, file = "model_OD2.rds")
+model_OD2 <- readRDS(file = "model_OD2.rds")
+summary(model_OD2)
 
+model_OD3 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention + Ext_temp_celsius,
+                          random = 1+Address, data = df, Hess=TRUE, nAGQ = 1)
+summary(model_OD3)
+
+
+
+## Attempt 2 using GLMMadaptive package
+
+#need to create "cohort" variable (see https://drizopoulos.github.io/GLMMadaptive/articles/Ordinal_Mixed_Models.html)
+
+cr_vals <- cr_setup(df$behaviour)
+
+cr_data <- df[cr_vals$subs, ]
+cr_data$y_new <- cr_vals$y
+cr_data$cohort <- cr_vals$cohort
+
+# This runs and converges, but only gives coefficients for behaviour >= default (ie. higher+default versus lower), which is not what we want - the example in the documentation does the same thing.. je ne comprends pas
+m_OD1 <- mixed_model(y_new ~ cohort + intervention + time_elapsed_r, random = ~ time_elapsed_r | site_room, data = cr_data, family = binomial())
+saveRDS(m_OD1, file = "m_OD1.rds")
+summary(m_OD1)
+
+#Attempt multi-nomial mixed effect model
+library(mixcat)
+npmlt(df$behaviour ~ df$time_elapsed_r + df$intervention*df$Site + df$Ext_temp_celsius, random=~1+df$time_elapsed_r, id = df$Address)
 
 ```
 
