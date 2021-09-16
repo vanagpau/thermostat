@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ## Libraries
-```{r, message = FALSE, warnings = FALSE}
+```{r libraries, message = FALSE, warnings = FALSE}
 
 library(data.table)
 library(psych)
@@ -27,6 +27,7 @@ library(MASS)
 library(minqa)
 library(lmerTest)
 library(GLMMadaptive)
+library(ordinal)
 library(tidyverse)
 
 # For new DELL
@@ -35,7 +36,7 @@ setwd("C:/Users/paulv/Documents/R/thermostat")
 ```
 
 ## Data set-up (from dissertation analysis.. additions are in IMPORT/CREATE DATA-FRAME section below)
-```{r, eval=FALSE, echo = FALSE}
+```{r DataWrangle, eval=FALSE, echo = FALSE}
 
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
@@ -399,7 +400,7 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 ```
 
 ## EXPORT FILES FOR QUICK ACCESS (if required)
-```{r, eval = FALSE, echo=FALSE}
+```{r FileExport, eval = FALSE, echo=FALSE}
 
 # main data file for longitudinal modelling (LARGE; 700k + rows)
 write_csv(irus_data, file = "IrusData.csv")
@@ -409,7 +410,7 @@ write_csv(cs, file = "SurveyData.csv")
 ```
 
 ## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
-```{r}
+```{r DataImport}
 
 #Import csv's
 irus_data <- read.csv("IrusData.csv")
@@ -479,7 +480,7 @@ df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "mora
 ```
 
 ## Mixed models
-```{r}
+```{r MixedModels}
 
 #Modelling manipulation effect - linear models
 lm1 <- lm(temp.c ~ intervention, data = df)
@@ -550,10 +551,10 @@ summary(mm6)
 mm7 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df)
 summary(mm7)
 
-# try with bobyqa - that works!
-#doesn't really tell us anything new
-mm7b <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
-summary(mm7b)
+# try with bobyqa - fails to converge (sometimes)
+# and doesn't really tell us anything new anyway
+# mm7b <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
+# summary(mm7b)
 
 #Random effects of time and intervention implicitly nested within Site and Room
 #boundary (singular) fit: see ?isSingular - too complex?
@@ -569,7 +570,7 @@ summary(mm7b)
 
 
 ## Ordinal models for multi-nomial (categorical) DV
-```{r}
+```{r OrdinalModels}
 
 #Add outcome variable to dataframe
 df$behaviour <- NA
@@ -614,9 +615,12 @@ df$Site <- factor(df$Site)
 model_OD2 <- readRDS(file = "model_OD2.rds")
 summary(model_OD2)
 
-model_OD3 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention + Ext_temp_celsius,
-                          random = 1+Address, data = df, Hess=TRUE, nAGQ = 1)
-summary(model_OD3)
+# this doesn't converge either
+# Warning: clmm2 may not have converged:
+#   optimizer 'ucminf' terminated with max|gradient|: 0.395293339186445
+# model_OD3 <- clmm2(behaviour ~ time_elapsed_r + intervention + Ext_temp_celsius,
+#                           random = Address, data = df, Hess=TRUE, nAGQ = 1)
+# summary(model_OD3)
 
 
 
@@ -625,24 +629,23 @@ summary(model_OD3)
 #need to create "cohort" variable (see https://drizopoulos.github.io/GLMMadaptive/articles/Ordinal_Mixed_Models.html)
 
 cr_vals <- cr_setup(df$behaviour)
-
 cr_data <- df[cr_vals$subs, ]
 cr_data$y_new <- cr_vals$y
 cr_data$cohort <- cr_vals$cohort
 
-# This runs and converges, but only gives coefficients for behaviour >= default (ie. higher+default versus lower), which is not what we want - the example in the documentation does the same thing.. je ne comprends pas
+# This runs and converges, but only gives coefficients for behaviour >= default (ie. higher+default versus lower), which is not what we want - the example in the documentation does the same thing.. je ne comprends pas!
 m_OD1 <- mixed_model(y_new ~ cohort + intervention + time_elapsed_r, random = ~ time_elapsed_r | site_room, data = cr_data, family = binomial())
 saveRDS(m_OD1, file = "m_OD1.rds")
 summary(m_OD1)
 
-#Attempt multi-nomial mixed effect model
-library(mixcat)
-npmlt(df$behaviour ~ df$time_elapsed_r + df$intervention*df$Site + df$Ext_temp_celsius, random=~1+df$time_elapsed_r, id = df$Address)
+#Attempt multi-nomial mixed effect model - documentation for this is sparse and so I'm not even sure the syntax is right, but it crashes R every time..
+
+# mixcat::npmlt(df$behaviour ~ df$time_elapsed_r + df$intervention*df$Site + df$Ext_temp_celsius, random=~1+df$time_elapsed_r, id = df$Address)
 
 ```
 
 ## Survey data
-```{r}
+```{r SurveyDataMixedModels}
 lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 
 ####Manipulation effect in sub-sample with questionnaire data
@@ -711,7 +714,7 @@ tab_model(m4)
 
 
 ## Bayesian Models
-```{r, eval = FALSE}
+```{r BayesModels, eval = FALSE}
 
 
 # Fit model using BRMS
