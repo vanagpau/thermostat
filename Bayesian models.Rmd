@@ -428,7 +428,8 @@ df <- irus_data %>%
   filter(is.na(Setpoint) == 0) %>%
   #filter(Setpoint != 19) %>% #exclude all default values
   mutate(time_elapsed = as.numeric((date_time) - date_time[1])/3600) %>% #zero time clock and convert to hours
-  mutate(temp.c = (Setpoint - mean(Setpoint,  na.rm=T))/sd(Setpoint, na.rm=T)) %>% #standardise set-point temperature
+  mutate(temp.z = (Setpoint - mean(Setpoint,  na.rm=T))/sd(Setpoint, na.rm=T)) %>% #standardise set-point temperature
+  mutate(temp.c = Setpoint - 19) %>% #create centred (non-standardised) temp setpoint measure = difference from default
   mutate(external.z = (Ext_temp_celsius - mean(Ext_temp_celsius,  na.rm=T))/sd(Ext_temp_celsius, na.rm=T)) #standardise external temperature
 
 #Replace all unique room names (characters) with number for modelling
@@ -513,12 +514,12 @@ summary(lm3)
 
 
 # histogram of temp distributions - full data frame and excluding defaults 
-df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) 
-df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) 
+df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
+df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
+df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)+ facet_wrap(df$intervention)
+df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(df_xd$intervention)
 
-# Plot mean temp setting over time
-df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2.5e5)
-df_xd %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df_xd$intervention) + ylim(-2,5) + xlim(0,2e4)
+
 
 ```
 
