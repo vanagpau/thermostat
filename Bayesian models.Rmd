@@ -21,6 +21,7 @@ library(nFactors)
 library(TTR)
 library(tidyquant)
 library(brms)
+library(R.filesets)
 library(lme4)
 library(bayesplot)
 library(MASS)
@@ -409,8 +410,8 @@ write_csv(irus_data, file = "IrusData.csv")
 write_csv(cs, file = "SurveyData.csv")
 ```
 
-## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
-```{r DataImport, echo=FALSE, results = FALSE}
+## IMPORT dissertation datafframe AND CREATE new DATA-FRAME (df) for modelling
+```{r DataImport, echo=FALSE, results = FALSE, eval=FALSE}
 
 #Import csv's
 irus_data <- read.csv("IrusData.csv")
@@ -455,6 +456,7 @@ cs$moralisation.z <- (cs$moralisation - mean(cs$moralisation))/sd(cs$moralisatio
 
 #Count instances of room numbers - there is one duplicate in Crescent - Room L04F
 data.frame(table(cs$site_room))
+
 #remove duplicate room - CRESCENTL04F
 cs <- cs %>% filter(site_room != "CRESCENTL04F")
 
@@ -471,11 +473,30 @@ df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "mora
                                    "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
                            by = "site_room")
 
+#generate sample of 50 rooms for smaller dataframe for model testing
 
-# write_csv(irus_data, file = "IrusData.csv")
-# write_csv(cs, file = "SurveyData.csv")
+df_sample <- filter(df, Address %in%  sample(1:551, 50))
+
+#save as rds objects for easy recovery
+saveRDS(df_survey, "df_survey.rds")
+saveRDS(df_survey_xd, "df_survey_xd.rds")
+saveRDS(df, "df.rds")
+saveRDS(df_xd, "df_xd.rds")
+saveRDS(cs, "cs.rds")
+saveRDS(df_sample, "df_sample.rds")
 
 
+```
+
+##New dataframe load in RDS objects
+```{r}
+
+df_survey <- loadRDS("df_survey.rds")
+df_survey_xd <- loadRDS("df_survey_xd.rds")
+df <- loadRDS("df.rds")
+df_xd <- loadRDS("df_xd.rds")
+cs <- loadRDS("cs.rds")
+df_sample <- loadRDS("df_sample.rds")
 
 ```
 
@@ -637,7 +658,7 @@ summary(m_OD1)
 
 ## Survey data
 ```{r SurveyDataMixedModels}
-lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
+
 
 ####Manipulation effect in sub-sample with questionnaire data
 #NO EXCLUSIONS
@@ -708,7 +729,23 @@ tab_model(m4)
 ```{r BayesModels, eval = FALSE}
 
 
-# Fit model using BRMS
+# Fit models using sample data-frame
+bms1 <- brm(formula = temp.c ~ time_elapsed_r + intervention + (time_elapsed|Address), 
+            data = df_sample, file=("bms1"), file_refit = getOption("brms.file_refit", "on_change"),
+            cores = 4, iter = 4000,
+            prior = set_prior("normal(0,0.5)", class = "b"))
+
+summary(bms1)
+
+#Fit model using full data-set
+bm1 <- brm(formula = temp.c ~ time_elapsed_r + intervention + (time_elapsed|Address), 
+            data = df, file=("bm1"), file_refit = getOption("brms.file_refit", "on_change"),
+            cores = 4, iter = 5000,
+            prior = set_prior("normal(0,0.4)", class = "b"))
+
+summary(bm1)
+
+#need to add cores = 4 as default is 1
 
 # NULL model
 
@@ -728,10 +765,9 @@ bm2 <- brm(formula = temp.c ~ intervention,
           file_refit = getOption("brms.file_refit", "on_change"))
 
 #temp depends on intervention - model DOES NOT CONVERGE (YET)
-bm3 <- brm(formula = temp.c ~ intervention + (1+time_elapsed|Address),
+bm3 <- brm(formula = temp.c ~ time_elapsed_r + intervention + (time_elapsed|Address),
           data = df, cores = 4, warmup = 1500, iter = 4000,
-          file=("bm3"), control = list(adapt_delta = 0.95),
-          file_refit = getOption("brms.file_refit", "on_change"))
+          file=("bm3"), file_refit = getOption("brms.file_refit", "on_change"))
 
 n_divergent <- function(x) {
     stopifnot(is(x, "brmsfit"))
@@ -745,7 +781,7 @@ n_divergent(bm2)
 n_divergent(bm3)
 
 #model visualisation and diagnostics
-posterior1 <- as.array(bm1)
+posterior1 <- as.array(bms1)
 
 # Trace plot of Linear Regression, define variables to plot via pars flag
 mcmc_trace(posterior1,  pars = c("b_Intercept", "sigma"), 
