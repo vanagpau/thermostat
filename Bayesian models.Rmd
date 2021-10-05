@@ -20,6 +20,7 @@ library(naniar)
 library(nFactors)
 library(TTR)
 library(tidyquant)
+library(hrbrthemes)
 library(brms)
 library(R.filesets)
 library(lme4)
@@ -474,6 +475,9 @@ df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "mora
                                    "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
                            by = "site_room")
 
+#Rename site locations with communications condition
+df$Site <- recode_factor(df$Site, CRESCENT = "FAMILY", WARNEFORD = "DIRECT")
+
 #generate sample of 50 rooms for smaller dataframe for model testing
 
 df_sample <- filter(df, Address %in%  sample(1:551, 50))
@@ -524,8 +528,18 @@ h4 <- df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim
 
 gridExtra::grid.arrange(h3, h4)
 
+df %>%
+  ggplot( aes(x=temp.c, fill=intervention), binwidth = .5) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'dodge') +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_ipsum() +
+    labs(fill="")
 
-h5 <- df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(~ intervention + Site) + ggtitle("Data excluding default settings") + theme(plot.title = element_text(size = 10))
+
+
+h5 <- df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_histogram(binwidth = .5, color="#e9ecef", alpha=0.6, position = 'dodge') + xlim(-5,5) + facet_wrap(~ Site) + ggtitle("Data excluding default settings") +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8)
 h5
 
 
@@ -560,12 +574,21 @@ summary(mm3)
 mm5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 summary(mm5)
 
+# equivalent model excluding defaults
+mmx5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df_xd)
+summary(mmx5)
+
 #Check for interaction effect of Site*Intervention
 #Shows that the intervention effect is driven largely (wholly??) by WARNEFORD site
 # Note: from memory we found this before - there was a big effect in one hall and not the other
 # personally I doubt this was solely due to a few words different on the poster, but that's for discussion
 mm6 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
 summary(mm6)
+
+mmx6 <- lmer(temp.c ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (time_elapsed_r|Address), data = df_xd)
+summary(mmx6)
+
+tab_model(mmx5, mmx6)
 
 
 #Random effects of time, within room and site implicitly nested 
