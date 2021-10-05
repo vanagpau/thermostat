@@ -514,11 +514,19 @@ summary(lm3)
 
 
 # histogram of temp distributions - full data frame and excluding defaults 
-df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
-df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
-df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)+ facet_wrap(df$intervention)
-df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(df_xd$intervention)
 
+options(scipen = 6) # sets threshold for number of characters to 6 for scientific notation
+
+h1 <- df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
+h2 <- df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13)
+h3 <- df %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(df$intervention) + ggtitle("Data including default settings (19 celsius)") + theme(plot.title = element_text(size = 10))
+h4 <- df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(df_xd$intervention)+ ggtitle("Data excluding default settings") + theme(plot.title = element_text(size = 10))
+
+gridExtra::grid.arrange(h3, h4)
+
+
+h5 <- df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5) + xlim(-5,13) + facet_wrap(~ intervention + Site) + ggtitle("Data excluding default settings") + theme(plot.title = element_text(size = 10))
+h5
 
 
 ```
