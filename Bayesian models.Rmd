@@ -410,7 +410,7 @@ write_csv(cs, file = "SurveyData.csv")
 ```
 
 ## QUICK IMPORT AND CREATE DATA-FRAME (df) for modelling
-```{r DataImport}
+```{r DataImport, echo=FALSE, results = FALSE}
 
 #Import csv's
 irus_data <- read.csv("IrusData.csv")
@@ -479,8 +479,8 @@ df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "mora
 
 ```
 
-## Mixed models
-```{r MixedModels}
+##Linear models and visualisation
+```{r LinearModels, eval=FALSE, echo=FALSE}
 
 #Modelling manipulation effect - linear models
 lm1 <- lm(temp.c ~ intervention, data = df)
@@ -499,20 +499,12 @@ df_xd %>% ggplot() + geom_histogram(aes(x = temp.c), binwidth = .5)
 df %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df$intervention) + ylim(-2,5) + xlim(0,2.5e5)
 df_xd %>% ggplot(aes(y = temp.c)) + geom_histogram() + facet_wrap(df_xd$intervention) + ylim(-2,5) + xlim(0,2e4)
 
+```
 
-# Mixed-model to model how temp.c depends on time as a random effect does not converge
-mm1 <- lmer(temp.c ~ (time_elapsed|Address), data = df)
-mmxd1 <- lmer(temp.c ~ (time_elapsed|Address), data = df_xd)
+## Mixed models
+```{r MixedModels}
 
-# checks at https://rstudio-pubs-static.s3.amazonaws.com/33653_57fc7b8e5d484c909b615d8633c01d51.html
 
-#check singularity - not a problem
-tt <- getME(mm1,"theta")
-ll <- getME(mm1,"lower")
-min(tt[ll==0])
-
-# change optimisation algorithm - still does not converge
-mm1 <- lmer(temp.c ~ (time_elapsed|Address), data = df, control = lmerControl(optimizer = "bobyqa"))
 
 # WITH rescaled time axis, the models converge..
 
@@ -524,7 +516,6 @@ summary(mm1)
 mmxd1 <- lmer(temp.c ~ (time_elapsed_r|Address), data = df_xd)
 summary(mmxd1)
 
-# So let's try some other models (including defaults)
 # No significant effect of time as a fixed effect (t value < 1)
 mm2 <- lmer(temp.c ~ time_elapsed_r + (time_elapsed_r|Address), data = df)
 summary(mm2)
@@ -570,7 +561,7 @@ summary(mm7)
 
 
 ## Ordinal models for multi-nomial (categorical) DV
-```{r OrdinalModels}
+```{r OrdinalModels, eval=FALSE}
 
 #Add outcome variable to dataframe
 df$behaviour <- NA
