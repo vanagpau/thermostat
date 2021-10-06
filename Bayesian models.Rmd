@@ -701,8 +701,11 @@ summary(m_OD1)
 #NO EXCLUSIONS
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r + (time_elapsed_r|site_room), data=df_survey)
 m2 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+
 m3 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+
 m4 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+
 m5 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
 tab_model(m1, m2, m3, m4, m5)
 
@@ -740,9 +743,27 @@ m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + interventi
 summary(m1)
 m1 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+m1 <- lmer(temp.c ~ 1 + NEP_mean_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
 
-#Demographic variables 
+#Demographic variables
+#political
+m5 <- lmer(temp.c ~ 1 + Political.orientation + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+summary(m5)
 
+#gender
+#ignore single non-binary participant
+m5 <- lmer(temp.c ~ 1 + Gender + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=(df_survey %>% filter(Gender != 'Different Identity')), control = lmerControl(optimizer = "bobyqa"))
+summary(m5)
+
+#UK - SIGNIFICANT
+m5 <- lmer(temp.c ~ 1 + Born_UK + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+summary(m5)
+
+#Age - convert to age from 18 = 0
+df_survey$Age <- df_survey$Age - min(df_survey$Age)
+m5 <- lmer(temp.c ~ 1 + Age + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+summary(m5)
 
 
 #In multi-variate models only INTENTION is significant
