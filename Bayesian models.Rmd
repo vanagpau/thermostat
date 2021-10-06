@@ -149,7 +149,7 @@ cs <- cs %>% rename('AscriptionResponsibility' = Q8_4)
 cs$Q34[cs$Q34 == 0] <- NA
 
 #Centre Age
-cs$Q34 <- cs$Q34 - mean(cs$Q34, na.rm = TRUE)
+#cs$Q34 <- cs$Q34 - mean(cs$Q34, na.rm = TRUE)
 
 #LOAD IN THE THERMOSTAT DATA
 
@@ -467,13 +467,18 @@ cs <- cs %>% filter(site_room != "CRESCENTL04F")
 df_survey <- inner_join(df, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
                                    "AscriptionResponsibility_sz", "SocialNorm_sz",
                                    "AwarenessConsequences_sz", "PEB_pragmatist_sz",
-                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
+                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz",
+                                  "Political.orientation", 'Q34', 'Q17', 'Q13')],
                         by = "site_room")
 df_survey_xd <- inner_join(df_xd, cs[,c("site_room", "Habit_sz", "PBC_sz", "moralisation.z",
                                    "AscriptionResponsibility_sz", "SocialNorm_sz",
                                    "AwarenessConsequences_sz", "PEB_pragmatist_sz",
-                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz")],
+                                   "PEB_activist_sz", "NEP_mean_sz", "Intention_sz",
+                                  "Political.orientation", 'Q34', 'Q17', 'Q13')],
                            by = "site_room")
+
+df_survey <- rename(df_survey, 'Age' = 'Q34', 'Born_UK' = 'Q17', 'Gender' = 'Q13')
+
 
 #Rename site locations with communications condition
 df$Site <- recode_factor(df$Site, CRESCENT = "FAMILY", WARNEFORD = "DIRECT")
@@ -735,6 +740,10 @@ m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + interventi
 summary(m1)
 m1 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+#Demographic variables 
+
+
 
 #In multi-variate models only INTENTION is significant
 m2 <- lmer(temp.c ~ 1 + time_elapsed_r + AwarenessConsequences_sz + AscriptionResponsibility_sz +
