@@ -513,6 +513,77 @@ df_sample <- loadRDS("df_sample.rds")
 ##Linear models and visualisation
 ```{r LinearModels, eval=FALSE, echo=FALSE}
 
+#Do the whole thing as one big correlation matrix - ACTUAL behaviour
+#M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
+
+M <- cs %>% select(avg_sp_overall_excdfltCL, 'Political.orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+              NEP_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', moralisation.z) %>% cor(use = "pairwise.complete.obs")
+
+# M_full <- cs %>% select(avg_sp_overall_excdfltCL, avg_setpointCL, thermo_changeCL, thermo_change_excdfltCL, 'Political orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+#               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
+#               MAC_mean, MFT_mean) %>% corr.test()
+
+#print(M_full, short = FALSE)
+print(M)
+#write.csv(M_full$ci, file = "main correlations.csv")
+corrplot::corrplot(M, method = "number", type = "lower", order = "AOE")
+
+# colcode <- c("firebrick2", 
+#              "firebrick2",  
+#              "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "firebrick2", 
+#               "olivedrab", 
+#               "olivedrab", 
+#               "firebrick2", 
+#               "olivedrab",
+#              "olivedrab")
+# 
+colnames(M) <- c("Mean setpoint (exc defaults)",
+                 "Political orientation",
+                 "PEB Activist",
+                 "PEB Pragmatist",
+                 "Awareness of consequences",
+                 "Acsription of responsibility",
+                 "NEP",
+                 "Social norm",
+                 "Perceived behavioural control",
+                 "Habit",
+                 "Intention",
+                 "Moralisation")
+# 
+rownames(M) <- c("Mean setpoint (exc defaults)",
+                 "Political orientation",
+                 "PEB Activist",
+                 "PEB Pragmatist",
+                 "Awareness of consequences",
+                 "Ascription of responsibility",
+                 "NEP",
+                 "Social norm",
+                 "Perceived behavioural control",
+                 "Habit",
+                 "Intention",
+                 "Moralisation")
+
+# res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
+# res1$ci
+# write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
+
+# corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
+
+corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7)
+
+
+
 #Modelling manipulation effect - linear models
 lm1 <- lm(temp.c ~ intervention, data = df)
 summary(lm1)
@@ -760,19 +831,25 @@ m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + interventi
 summary(m1)
 m1 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 
 
 #refit models with interaction effect
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * AwarenessConsequences_sz + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * AscriptionResponsibility_sz + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r +external.z + intervention * Site * PBC_sz + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r +external.z + intervention * Site * moralisation.z + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * Intention_sz + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+plot_model(m1, type = "int")
 
 
 
