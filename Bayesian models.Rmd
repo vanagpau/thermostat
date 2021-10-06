@@ -583,6 +583,9 @@ rownames(M) <- c("Mean setpoint (exc defaults)",
 corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7)
 
 
+#Note there are no major differences between demographic make up of the sites
+describe(df_survey %>% filter(Site == "CRESCENT") %>% select(Political.orientation, Age, Born_UK, Gender))
+describe(df_survey %>% filter(Site == "WARNEFORD") %>% select(Political.orientation, Age, Born_UK, Gender))
 
 #Modelling manipulation effect - linear models
 lm1 <- lm(temp.c ~ intervention, data = df)
