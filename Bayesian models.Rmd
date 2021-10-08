@@ -8,6 +8,7 @@ output: html_document
 ## Libraries
 ```{r libraries, message = FALSE, warnings = FALSE}
 
+options(scipen = 4)
 library(data.table)
 library(psych)
 library(standardize)
@@ -835,6 +836,48 @@ summary(m4)
 m5 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m5)
 tab_model(m1, m2, m3, m4, m5)
+
+#Check Activist v Pragmatist intention
+m1 <- lmer(temp.c ~ 1 + PEB_pragmatist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m1)
+m2 <- lmer(temp.c ~ 1 + PEB_activist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
+summary(m2)
+tab_model(m1, m2, m5)
+
+
+# Effect size of moralisation on exc default data
+m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey_xd)
+summary(m1)
+confint(m1)
+
+# Mediation effects 
+
+# DV = temp setting; IV = moralisation; mediator = intention
+med1 <- psych::mediate('temp.c', 'moralisation.z', m = c('Intention_sz'), data = df_survey)
+med1
+mediate.diagram(med1, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
+
+# DV = temp setting; IV = ascription; mediator = intention
+med2 <- psych::mediate('temp.c', 'AscriptionResponsibility_sz', m = c('Intention_sz'), data = df_survey)
+med2
+mediate.diagram(med2, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
+
+# DV = temp setting; IV = PBC; mediator = intention
+med3 <- psych::mediate('temp.c', 'PBC_sz', m = c('Intention_sz'), data = df_survey)
+med3
+mediate.diagram(med3, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
+
+# DV = temp setting; IV = awareness consequences; mediator = intention
+med4 <- psych::mediate('temp.c', 'AwarenessConsequences_sz', m = c('Intention_sz'), data = df_survey)
+med4
+mediate.diagram(med4, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
+
+
+# DV = temp setting; IV = social norm; mediator = intention
+med5 <- psych::mediate('temp.c', 'SocialNorm_sz', m = c('Intention_sz'), data = df_survey)
+med5
+mediate.diagram(med5, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
+
 
 plot_model(m1, type = "int")
 plot_model(m1, type = "re")
