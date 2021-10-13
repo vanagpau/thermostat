@@ -99,6 +99,7 @@ likelyPEB <- cs %>% select(Q7_1:Q7_22)
 thermo_moral <- cs %>% select(Q8_7:Q8_9)
 moral_ascoop <- cs %>% select(Q9_1:Q9_7)
 moral_found <- cs %>% select(Q10_1:Q10_7)
+moralisation <- cs %>% select(c(Q8_7, Q8_9))
 
 #Create Activist and Pragmatist variables from likely PEB scale
 cs <- cs %>% rowwise() %>% mutate(
@@ -604,6 +605,7 @@ alpha(likelyPEB)
 alpha(thermo_moral)
 alpha(moral_ascoop)
 alpha(moral_found)
+alpha(moralisation)
 
 #Activist
 cs %>% select(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11) %>% alpha()
