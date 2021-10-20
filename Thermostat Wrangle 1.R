@@ -1632,15 +1632,20 @@ p <- irus_data %>%
   summarise(External = mean(Ext_temp_celsius), 
             `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
             `Thermostat setting` = mean(Setpoint, na.rm = TRUE),
-            sd = sd(daily_mean_sp_excdflt, na.rm = TRUE)) %>% 
-  mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd)
+            sd = sd(daily_mean_sp_excdflt, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
+  mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd) %>% 
+  mutate(lower1 = `Thermostat setting` - sd1, upper1 = `Thermostat setting` + sd1) %>%
+  mutate(Date = as.Date(Date))
 
 p$Date <- as.Date(p$Date)
 
 p %>%  ggplot() +
   geom_line(aes(x = Date, y = `Thermostat setting exc. defaults`, colour = "Thermostat setting exc. defaults", 
                 group = 1)) +
-  geom_errorbar(aes(x = Date, ymin = lower, ymax = upper), width = 0.2) +
+  geom_errorbar(aes(x = Date, ymin = lower, ymax = upper), lty = "longdash", 
+                width = 0.5, colour = "red", alpha = 0.3) +
+  #geom_errorbar(aes(x = Date, ymin = lower1, ymax = upper1), lty = "longdash", 
+  #              width = 0.2, colour = "blue", alpha = 0.5) +
   geom_line(aes(x = Date, y = External, colour = "External", group = 1)) +
   labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", y = "Temp (celsius)") +
   geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted", group = 1) +

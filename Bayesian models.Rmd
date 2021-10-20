@@ -221,11 +221,12 @@ exclude <- irus_data %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("
 # Add EXCLUDE flag to Irus dataframe - 0 = ones to ignore; 1 = ones to keep
 irus_data <- irus_data %>% ungroup() %>% mutate(exclude = (ifelse(irus_data$date_time %in% exclude, 0, 1)))
 
-
+#Remove all EXCLUDE = 0 from irus_data
+irus_data <- irus_data %>% filter(exclude == 1)
 
 #Calc mean room temp before and after posters (14th Feb) for each room & append to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
-  filter (Date > as.Date("2020-01-30") & Date < as.Date(  "2020-02-14")) %>% 
+  filter (Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) %>% 
   group_by(site_room) %>% 
   summarise(avg_setpoint_before = mean(Setpoint)), by = "site_room")
 
@@ -250,6 +251,10 @@ irus_data <- left_join (irus_data, irus_data %>%
    group_by(site_room) %>%
    summarise(avg_setpointCL = (mean(Setpoint) - 19)), by = "site_room")
 
+#Add Setpoint exc. default as new variable
+Setpoint_excl_default <- irus_data %>% filter(Setpoint != 19) %>% select(Setpoint, site_room, date_time)
+irus_data <- left_join(irus_data, Setpoint_excl_default, by = c("site_room", "date_time"))
+names(irus_data)[names(irus_data) == 'Setpoint.y'] <- 'Setpoint_excl_default'
  
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -509,10 +514,40 @@ df_xd <- loadRDS("df_xd.rds")
 cs <- loadRDS("cs.rds")
 df_sample <- loadRDS("df_sample.rds")
 
+
+
 ```
 
 ##Linear models and visualisation
 ```{r LinearModels, eval=FALSE, echo=FALSE}
+
+p <- irus_data %>% 
+  group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
+                              (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+  summarise(External = mean(Ext_temp_celsius), 
+            `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
+            `Thermostat setting` = mean(Setpoint, na.rm = TRUE),
+            sd = sd(Setpoint, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
+  mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd) %>% 
+  mutate(lower1 = `Thermostat setting` - sd1, upper1 = `Thermostat setting` + sd1) %>%
+  mutate(Date = as.Date(Date))
+
+p %>%  ggplot() +
+  geom_line(aes(x = Date, y = `Thermostat setting exc. defaults`, colour = "Thermostat setting exc. defaults", 
+                group = 1)) +
+  geom_errorbar(aes(x = Date, ymin = lower, ymax = upper), lty = "longdash", 
+                width = 0.5, colour = "red", alpha = 0.3) +
+  #geom_errorbar(aes(x = Date, ymin = lower1, ymax = upper1), lty = "longdash", 
+  #              width = 0.2, colour = "blue", alpha = 0.5) +
+  geom_line(aes(x = Date, y = External, colour = "External", group = 1)) +
+  labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", y = "Temp (celsius)") +
+  geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted", group = 1) +
+  scale_color_manual(values = c(
+    "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) +
+  scale_x_date(date_labels = "%b %d")
+
+
+
 
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 #M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
@@ -575,9 +610,9 @@ rownames(M) <- c("Mean setpoint (exc defaults)",
                  "Intention",
                  "Moralisation")
 
-# res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
-# res1$ci
-# write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
+res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
+res1$ci
+write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
 # corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
 
