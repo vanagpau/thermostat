@@ -1632,7 +1632,7 @@ p <- irus_data %>%
   summarise(External = mean(Ext_temp_celsius), 
             `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
             `Thermostat setting` = mean(Setpoint, na.rm = TRUE),
-            sd = sd(daily_mean_sp_excdflt, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
+            sd = sd(Setpoint, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
   mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd) %>% 
   mutate(lower1 = `Thermostat setting` - sd1, upper1 = `Thermostat setting` + sd1) %>%
   mutate(Date = as.Date(Date))

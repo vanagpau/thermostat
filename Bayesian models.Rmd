@@ -255,6 +255,7 @@ irus_data <- left_join (irus_data, irus_data %>%
 Setpoint_excl_default <- irus_data %>% filter(Setpoint != 19) %>% select(Setpoint, site_room, date_time)
 irus_data <- left_join(irus_data, Setpoint_excl_default, by = c("site_room", "date_time"))
 names(irus_data)[names(irus_data) == 'Setpoint.y'] <- 'Setpoint_excl_default'
+names(irus_data)[names(irus_data) == 'Setpoint.x'] <- 'Setpoint'
  
 #Calculate before and after average thermostat set points EXC. default settings + add to irus_data
 irus_data <- left_join (irus_data, irus_data %>% 
@@ -527,7 +528,7 @@ p <- irus_data %>%
   summarise(External = mean(Ext_temp_celsius), 
             `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
             `Thermostat setting` = mean(Setpoint, na.rm = TRUE),
-            sd = sd(Setpoint, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
+            sd = sd(Setpoint_excl_default, na.rm = TRUE), sd1 = sd(Setpoint, na.rm = TRUE)) %>% 
   mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd) %>% 
   mutate(lower1 = `Thermostat setting` - sd1, upper1 = `Thermostat setting` + sd1) %>%
   mutate(Date = as.Date(Date))
@@ -537,16 +538,18 @@ p %>%  ggplot() +
                 group = 1)) +
   geom_errorbar(aes(x = Date, ymin = lower, ymax = upper), lty = "longdash", 
                 width = 0.5, colour = "red", alpha = 0.3) +
-  #geom_errorbar(aes(x = Date, ymin = lower1, ymax = upper1), lty = "longdash", 
-  #              width = 0.2, colour = "blue", alpha = 0.5) +
+  geom_errorbar(aes(x = Date, ymin = lower1, ymax = upper1), lty = "longdash", 
+                width = 0.2, colour = "black", alpha = 0.3) +
   geom_line(aes(x = Date, y = External, colour = "External", group = 1)) +
-  labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", y = "Temp (celsius)") +
+  labs(y = "Temp (celsius)") +
   geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted", group = 1) +
   scale_color_manual(values = c(
     "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) +
-  scale_x_date(date_labels = "%b %d")
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_continuous(breaks = c(0:25)) +
+  theme(legend.title = element_blank(), legend.position="bottom")
 
-
+ggsave("temp plot.png", device = "png")
 
 
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
