@@ -1626,19 +1626,27 @@ irus_data %>% group_by(site_room) %>% summarise(avg_setpoint_before = mean(
 
 #Plot of daily external temp and mean thermostat setting
 
-irus_data %>% 
+p <- irus_data %>% 
   group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
-            (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
+                              (Date > as.Date("2020-02-14") & Date < as.Date("2020-03-01"))) %>%
   summarise(External = mean(Ext_temp_celsius), 
             `Thermostat setting exc. defaults` = mean(daily_mean_sp_excdflt, na.rm = TRUE),
-            `Thermostat setting` = mean(Setpoint, na.rm = TRUE)) %>%
-  ggplot() + geom_line(aes(x = Date, y = `Thermostat setting exc. defaults`, colour = "Thermostat setting exc. defaults")) + 
-  geom_line(aes(x = Date, y = External, colour = "External")) + 
-  labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", 
-       y = "Temp (celsius)") + 
-  geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted") +
+            `Thermostat setting` = mean(Setpoint, na.rm = TRUE),
+            sd = sd(daily_mean_sp_excdflt, na.rm = TRUE)) %>% 
+  mutate(lower = `Thermostat setting exc. defaults` - sd, upper = `Thermostat setting exc. defaults` + sd)
+
+p$Date <- as.Date(p$Date)
+
+p %>%  ggplot() +
+  geom_line(aes(x = Date, y = `Thermostat setting exc. defaults`, colour = "Thermostat setting exc. defaults", 
+                group = 1)) +
+  geom_errorbar(aes(x = Date, ymin = lower, ymax = upper), width = 0.2) +
+  geom_line(aes(x = Date, y = External, colour = "External", group = 1)) +
+  labs(title = "Mean thermostat setting (inc/exc defaults) and external temperature", y = "Temp (celsius)") +
+  geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted", group = 1) +
   scale_color_manual(values = c(
-    "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) 
+    "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) +
+  scale_x_date(date_labels = "%b %d")
   
 #Plot intention versus actual behaviour
 cs %>% ggplot(aes(x = `Intention`, y = thermo_change)) + geom_point() +
