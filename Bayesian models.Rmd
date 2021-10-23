@@ -489,6 +489,7 @@ df_survey <- rename(df_survey, 'Age' = 'Q34', 'Born_UK' = 'Q17', 'Gender' = 'Q13
 
 #Rename site locations with communications condition
 df$Site <- recode_factor(df$Site, CRESCENT = "FAMILY", WARNEFORD = "DIRECT")
+df_xd$Site <- recode_factor(df_xd$Site, CRESCENT = "FAMILY", WARNEFORD = "DIRECT")
 
 #generate sample of 50 rooms for smaller dataframe for model testing
 
@@ -541,15 +542,19 @@ p %>%  ggplot() +
   geom_errorbar(aes(x = Date, ymin = lower1, ymax = upper1), lty = "longdash", 
                 width = 0.2, colour = "black", alpha = 0.3) +
   geom_line(aes(x = Date, y = External, colour = "External", group = 1)) +
-  labs(y = "Temp (celsius)") +
+  labs(y = "Temp (celsius)", caption = "Notes: External temperature sourced from WeatherOnline.co.uk; Thermostat data is shown with and without\nthe system default value of 19 degrees; Error bars show 1 standard deviation") +
   geom_line(aes(x = Date, y = `Thermostat setting`, colour = "Thermostat setting"), linetype = "dotted", group = 1) +
   scale_color_manual(values = c(
     "External" = "royalblue3", "Thermostat setting" = "black", "Thermostat setting exc. defaults" = "red")) +
   scale_x_date(date_labels = "%b %d") +
   scale_y_continuous(breaks = c(0:25)) +
-  theme(legend.title = element_blank(), legend.position="bottom")
+  theme(legend.title = element_blank(), legend.position="bottom", plot.caption = element_text(hjust = 0)) 
 
 ggsave("temp plot.png", device = "png")
+
+#Correlation between external temp and thermostat setting
+cor.test(irus_data$daily_mean_sp_excdflt, irus_data$Ext_temp_celsius)
+
 
 
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
@@ -660,6 +665,22 @@ h5 <- df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_histogram(binwid
     theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8)
 h5
 
+df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_density(adjust=1.5, alpha=.3) + xlim(-5,5) + facet_wrap(~ Site) + ggtitle("Data excluding default settings") + scale_fill_discrete(name = "Intervention") +
+    theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8) + labs(x = "Temperature difference from default") + theme(axis.title.y = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#Density plots
+
+
+d1 <- ggplot(data=df, aes(x=temp.c, group=intervention, fill=intervention)) +
+    geom_density(adjust=1.5, alpha=.3) + xlim(-5,5) + labs(x = "Temperature difference from default") + theme(axis.title.y = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + scale_fill_discrete(name = "Intervention") + ggtitle("INCLUDING default settings") +     theme(plot.title = element_text(size = 10))
+
+
+d2 <- ggplot(data=df_xd, aes(x=temp.c, group=intervention, fill=intervention)) +
+    geom_density(adjust=1.5, alpha=.3) + xlim(-5,5) + labs(x = "Temperature difference from default") + theme(axis.title.y = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + scale_fill_discrete(name = "Intervention") + ggtitle("EXCLUDING default settings") +     theme(plot.title = element_text(size = 10))
+
+d3 <- gridExtra::grid.arrange(d1, d2)
+
+ggsave("density plot.png", plot = d3, device = "png")
 
 ```
 
