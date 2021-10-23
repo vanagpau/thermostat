@@ -578,16 +578,16 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 ####EXPORT FOR MODELLING
 
 # main data file for longitudinal modelling (LARGE; 700k + rows)
-write.csv(irus_data, file = "AdamIrusdata.csv")
-
-# data file for matching effect to rooms (Small; 88 rows)
-adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
-    group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
-       `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
-       external = mean(Ext_temp_celsius)),
-    by = "site_room")
-
-write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
+# write.csv(irus_data, file = "AdamIrusdata.csv")
+# 
+# # data file for matching effect to rooms (Small; 88 rows)
+# adam_data_cleaned <-left_join(cs, irus_data %>% filter(site_room %in% c(cs$site_room)) %>% filter (exclude == 1) %>%
+#     group_by(site_room, Date) %>% summarise(daily_mean_sp = mean(Setpoint, na.rm = TRUE), daily_airtemp = mean(
+#        `Temp Air`, na.rm = TRUE), daily_mean_sp_excdflt = mean(daily_mean_sp_excdflt, na.rm = TRUE),
+#        external = mean(Ext_temp_celsius)),
+#     by = "site_room")
+# 
+# write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 
 
@@ -598,14 +598,17 @@ write.csv(adam_data_cleaned, file = "Adam4nopeaks.csv")
 
 #Calculate Cronbach's Alpha for questionnaire scales
 
-alpha(NEP)
-alpha(EAI)
-alpha(BSCS)
-alpha(likelyPEB)
-alpha(thermo_moral)
-alpha(moral_ascoop)
-alpha(moral_found)
-alpha(moralisation)
+psych::alpha(NEP)
+psych::alpha(EAI)
+psych::alpha(BSCS)
+psych::alpha(likelyPEB)
+psych::alpha(thermo_moral)
+psych::alpha(moral_ascoop)
+psych::alpha(moral_found)
+psych::alpha(moralisation)
+
+mean(as.vector(c(moralisation$Q8_7, moralisation$Q8_9)))
+sd(as.vector(c(moralisation$Q8_7, moralisation$Q8_9)))
 
 #Activist
 cs %>% select(Q7_2, Q7_3, Q7_4, Q7_5, Q7_6, Q7_8, Q7_9, Q7_10, Q7_11) %>% alpha()

@@ -665,9 +665,6 @@ h5 <- df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_histogram(binwid
     theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8)
 h5
 
-df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_density(adjust=1.5, alpha=.3) + xlim(-5,5) + facet_wrap(~ Site) + ggtitle("Data excluding default settings") + scale_fill_discrete(name = "Intervention") +
-    theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8) + labs(x = "Temperature difference from default") + theme(axis.title.y = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
 #Density plots
 
 
@@ -681,6 +678,13 @@ d2 <- ggplot(data=df_xd, aes(x=temp.c, group=intervention, fill=intervention)) +
 d3 <- gridExtra::grid.arrange(d1, d2)
 
 ggsave("density plot.png", plot = d3, device = "png")
+
+d4 <- df_xd %>% ggplot(aes(x=temp.c, fill=intervention)) + geom_density(adjust=1.5, alpha=.3) + xlim(-5,5) + facet_wrap(~ Site) + scale_fill_discrete(name = "Intervention") +
+    theme_ipsum(plot_title_size = 9, plot_title_face = "plain", strip_text_size = 8) + labs(x = "Temperature difference from default") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.title.y = element_blank(), axis.title.x = element_text(hjust = 0.5),
+axis.line = element_line(colour = "black"))
+
+ggsave("density plot2.png", plot = d4, device = "png", width = 7, height = 4)
 
 ```
 
@@ -716,6 +720,8 @@ summary(mm5)
 # equivalent model excluding defaults
 mmx5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df_xd)
 summary(mmx5)
+
+confint.merMod(mmx5)
 
 #Check for interaction effect of Site*Intervention
 #Shows that the intervention effect is driven largely (wholly??) by WARNEFORD site
