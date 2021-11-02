@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ## Libraries
-```{r libraries, message = FALSE, warnings = FALSE}
+```{r libraries, message = FALSE, warnings = FALSE, results = FALSE}
 
 options(scipen = 4)
 library(data.table)
@@ -502,6 +502,7 @@ saveRDS(df, "df.rds")
 saveRDS(df_xd, "df_xd.rds")
 saveRDS(cs, "cs.rds")
 saveRDS(df_sample, "df_sample.rds")
+saveRDS(irus_data, "irus_data.rds")
 
 
 ```
@@ -515,12 +516,12 @@ df <- loadRDS("df.rds")
 df_xd <- loadRDS("df_xd.rds")
 cs <- loadRDS("cs.rds")
 df_sample <- loadRDS("df_sample.rds")
-
+irus_data <- loadRDS("irus_data.rds")
 
 
 ```
 
-##Linear models and visualisation
+##Visualisation
 ```{r LinearModels, eval=FALSE, echo=FALSE}
 
 p <- irus_data %>% 
@@ -560,7 +561,7 @@ cor.test(irus_data$daily_mean_sp_excdflt, irus_data$Ext_temp_celsius)
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 #M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
 
-M <- cs %>% select(avg_sp_overall_excdfltCL, 'Political.orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
+M <- cs %>% select(avg_sp_overall_excdfltCL, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', moralisation.z) %>% cor(use = "pairwise.complete.obs")
 
 # M_full <- cs %>% select(avg_sp_overall_excdfltCL, avg_setpointCL, thermo_changeCL, thermo_change_excdfltCL, 'Political orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
@@ -569,31 +570,8 @@ M <- cs %>% select(avg_sp_overall_excdfltCL, 'Political.orientation', PEB_activi
 
 #print(M_full, short = FALSE)
 print(M)
-#write.csv(M_full$ci, file = "main correlations.csv")
-corrplot::corrplot(M, method = "number", type = "lower", order = "AOE")
 
-# colcode <- c("firebrick2", 
-#              "firebrick2",  
-#              "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "firebrick2", 
-#               "olivedrab", 
-#               "olivedrab", 
-#               "firebrick2", 
-#               "olivedrab",
-#              "olivedrab")
-# 
 colnames(M) <- c("Mean setpoint (exc defaults)",
-                 "Political orientation",
                  "PEB Activist",
                  "PEB Pragmatist",
                  "Awareness of consequences",
@@ -604,9 +582,8 @@ colnames(M) <- c("Mean setpoint (exc defaults)",
                  "Habit",
                  "Intention",
                  "Moralisation")
-# 
+
 rownames(M) <- c("Mean setpoint (exc defaults)",
-                 "Political orientation",
                  "PEB Activist",
                  "PEB Pragmatist",
                  "Awareness of consequences",
@@ -618,13 +595,22 @@ rownames(M) <- c("Mean setpoint (exc defaults)",
                  "Intention",
                  "Moralisation")
 
+#Use corr.p function to get p values r values and confidence intervals from correlation matrix M
 res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
 res1$ci
+
+#Write CI's to text file
 write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
-# corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7, tl.col = colcode)
+#REmove all non-significant (p > .05) correlations
+M[res1$p > .05] <- NA
 
+#Old plot "it makes my eyes bleed"
 corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7)
+
+#New plot
+corrplot::corrplot(M, col = 'gray', number.cex =  .8, tl.col="black", addCoef.col = 'black', type = "lower", diag = FALSE, cl.pos = 'n', na.label=" ", method = "square")
+
 
 
 #Note there are no major differences between demographic make up of the sites
