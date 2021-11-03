@@ -38,7 +38,7 @@ setwd("C:/Users/paulv/Documents/R/thermostat")
 
 ```
 
-## Data set-up (from dissertation analysis.. additions are in IMPORT/CREATE DATA-FRAME section below)
+# Data set-up (from dissertation analysis.. additions are in IMPORT/CREATE DATA-FRAME section below)
 ```{r DataWrangle, eval=FALSE, echo = FALSE}
 
 #Load Values and Environmental Behaviours (VEB) Questionnaire
@@ -408,7 +408,7 @@ cs <- cs %>% mutate(PoliticalOrientation_sz = as.numeric(scale(`Political orient
 
 ```
 
-## EXPORT FILES FOR QUICK ACCESS (if required)
+# EXPORT FILES FOR QUICK ACCESS (if required)
 ```{r FileExport, eval = FALSE, echo=FALSE}
 
 # main data file for longitudinal modelling (LARGE; 700k + rows)
@@ -418,7 +418,7 @@ write_csv(irus_data, file = "IrusData.csv")
 write_csv(cs, file = "SurveyData.csv")
 ```
 
-## IMPORT dissertation datafframe AND CREATE new DATA-FRAME (df) for modelling
+# IMPORT dissertation dataframe AND CREATE new DATA-FRAME (df) for modelling
 ```{r DataImport, echo=FALSE, results = FALSE, eval=FALSE}
 
 #Import csv's
@@ -507,7 +507,7 @@ saveRDS(irus_data, "irus_data.rds")
 
 ```
 
-##New dataframe load in RDS objects
+# New dataframe load in RDS objects
 ```{r}
 
 df_survey <- loadRDS("df_survey.rds")
@@ -522,7 +522,7 @@ irus_data <- loadRDS("irus_data.rds")
 ```
 
 ##Visualisation
-```{r LinearModels, eval=FALSE, echo=FALSE}
+```{r Visualisation, warning=FALSE}
 
 p <- irus_data %>% 
   group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
@@ -556,20 +556,11 @@ ggsave("temp plot.png", device = "png")
 #Correlation between external temp and thermostat setting
 cor.test(irus_data$daily_mean_sp_excdflt, irus_data$Ext_temp_celsius)
 
-
-
 #Do the whole thing as one big correlation matrix - ACTUAL behaviour
 #M is only correlation matrix, M_full (from corr.test) includes p-values and conf. intervals
 
 M <- cs %>% select(avg_sp_overall_excdfltCL, PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
               NEP_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', moralisation.z) %>% cor(use = "pairwise.complete.obs")
-
-# M_full <- cs %>% select(avg_sp_overall_excdfltCL, avg_setpointCL, thermo_changeCL, thermo_change_excdfltCL, 'Political orientation', PEB_activist, PEB_pragmatist, 'AwarenessConsequences', 'AscriptionResponsibility', 
-#               NEP_mean, EAI_mean, 'SocialNorm', 'PBC', 'Habit', 'Intention', thermo_moral_mean, BSCS_mean,
-#               MAC_mean, MFT_mean) %>% corr.test()
-
-#print(M_full, short = FALSE)
-print(M)
 
 colnames(M) <- c("Mean setpoint (exc defaults)",
                  "PEB Activist",
@@ -597,21 +588,16 @@ rownames(M) <- c("Mean setpoint (exc defaults)",
 
 #Use corr.p function to get p values r values and confidence intervals from correlation matrix M
 res1 <- corr.p(M, 86) # Note: 86 observations for thermo_exc_dfltCL as 2 taken out as duplicated (Room L04F)
-res1$ci
 
 #Write CI's to text file
 write.table(res1$ci, file = "corr_actuals.txt", sep = ",", quote = FALSE, row.names = T)
 
-#REmove all non-significant (p > .05) correlations
+#Remove all non-significant (p > .05) correlations
 M[res1$p > .05] <- NA
 
-#Old plot "it makes my eyes bleed"
-corrplot::corrplot.mixed(M, order = "hclust",lower.col = "white", number.cex = .5, tl.pos = "lt", tl.cex = .7)
 
 #New plot
 corrplot::corrplot(M, col = 'gray', number.cex =  .8, tl.col="black", addCoef.col = 'black', type = "lower", diag = FALSE, cl.pos = 'n', na.label=" ", method = "square")
-
-
 
 #Note there are no major differences between demographic make up of the sites
 describe(df_survey %>% filter(Site == "CRESCENT") %>% select(Political.orientation, Age, Born_UK, Gender))
@@ -677,8 +663,6 @@ ggsave("density plot2.png", plot = d4, device = "png", width = 7, height = 4)
 ## Mixed models
 ```{r MixedModels}
 
-
-
 # WITH rescaled time axis, the models converge..
 
 #Including defaults
@@ -700,7 +684,7 @@ summary(mm3)
 
 #Then ext temp and intervention together
 # Shows intervention has an effect too
-mm5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df)
+mm5 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address), data = df, control = lmerControl(optimizer = "bobyqa"))
 summary(mm5)
 
 # equivalent model excluding defaults
@@ -726,26 +710,12 @@ tab_model(mmx5, mmx6)
 mm7 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df)
 summary(mm7)
 
-# try with bobyqa - fails to converge (sometimes)
-# and doesn't really tell us anything new anyway
-# mm7b <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r|Address) + (time_elapsed_r|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
-# summary(mm7b)
-
-#Random effects of time and intervention implicitly nested within Site and Room
-#boundary (singular) fit: see ?isSingular - too complex?
-#mm8 <- lmer(temp.c ~ time_elapsed_r + intervention + Ext_temp_celsius + (time_elapsed_r+intervention|Address) + (time_elapsed_r+intervention|Site), data = df, control = lmerControl(optimizer = "bobyqa"))
-#summary(mm8)
-
-
-
-
-
 
 ```
 
 
 ## Ordinal models for multi-nomial (categorical) DV
-```{r OrdinalModels, eval=FALSE}
+```{r OrdinalModels, eval=FALSE, echo=FALSE}
 
 #Add outcome variable to dataframe
 df$behaviour <- NA
@@ -835,7 +805,7 @@ m4 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + Site + (tim
 m5 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
 tab_model(m1, m2, m3, m4, m5)
 
-#EXCLUSIONS 
+#EXCLUding DEFAULT DATA
 m1 <- lmer(temp.c ~ 1 + time_elapsed_r + (time_elapsed_r|site_room), data=df_survey_xd)
 m2 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
 m3 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention + (time_elapsed_r|site_room), data=df_survey_xd, control = lmerControl(optimizer = "bobyqa"))
@@ -845,45 +815,48 @@ tab_model(m1, m2, m3, m4, m5)
 
 
 
-#these variables seem to have no effect 
+# Variables seem to have no effect 
 
+#NEP
 m1 <- lmer(temp.c ~ 1 + NEP_mean_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+# Pro-environmental behaviours - ACTIVIST
 m1 <- lmer(temp.c ~ 1 + PEB_activist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+# Pro-environmental behaviours - PRAGMATIST
 m1 <- lmer(temp.c ~ 1 + PEB_pragmatist_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+#HABIT
 m1 <- lmer(temp.c ~ 1 + Habit_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+#SOCIAL NORM
 m1 <- lmer(temp.c ~ 1 + SocialNorm_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
-m1 <- lmer(temp.c ~ 1 + NEP_mean_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-
-#these variables seem to have no effect - test for interaction effects with intervention
-
-m1 <- lmer(temp.c ~ 1 + NEP_mean_sz*intervention + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-m1 <- lmer(temp.c ~ 1 + PEB_activist_sz*intervention + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-m1 <- lmer(temp.c ~ 1 + PEB_pragmatist_sz*intervention + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-m1 <- lmer(temp.c ~ 1 + Habit_sz*intervention + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-m1 <- lmer(temp.c ~ 1 + SocialNorm_sz*intervention + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-
 
 
 #These variables are all p < .05 - strongest are intention and moralisation
+
+#AWARENESS OF CONSEQUENCES
 m1 <- lmer(temp.c ~ 1 + AwarenessConsequences_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m1)
+
+#ASCRIPTION OF RESPONSIBILITY
 m2 <- lmer(temp.c ~ 1 + AscriptionResponsibility_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m2)
+
+#PERCEIVED BEHAVIOURAL CONTROL
 m3 <- lmer(temp.c ~ 1 + PBC_sz + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m3)
+
+#MORALISATION
 m4 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m4)
+
+#BEHAVIOURAL INTENTION
 m5 <- lmer(temp.c ~ 1 + Intention_sz + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey)
 summary(m5)
 tab_model(m1, m2, m3, m4, m5)
@@ -896,62 +869,79 @@ summary(m2)
 tab_model(m1, m2, m5)
 
 
-# Effect size of moralisation on exc default data
-m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r +external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey_xd)
+# Find EFFECT SIZE size of moralisation on exc default data
+m1 <- lmer(temp.c ~ 1 + moralisation.z + time_elapsed_r + external.z + intervention * Site + (time_elapsed_r|site_room),data=df_survey_xd)
 summary(m1)
 confint(m1)
 
-# Mediation effects 
+```
 
-# DV = temp setting; IV = moralisation; mediator = intention
-med1 <- psych::mediate('temp.c', 'moralisation.z', m = c('Intention_sz'), data = df_survey)
+
+
+# Moderation / Mediation effects 
+```{r Med/Mod Effects}
+
+#For moderation convert intervention to dummy variable from factor
+df_survey$intervention <- as.numeric(df_survey$intervention)
+
+#Fit basic models + psych variables 3-way interaction (note: standardised temp)
+
+#Intention
+m_int <- lmer(temp.z ~ 1 + time_elapsed_r + external.z + intervention * Intention_sz + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+#Ascription responsibility
+m_asc <- lmer(temp.z ~ 1 + time_elapsed_r + external.z + intervention * AscriptionResponsibility_sz + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+#Perceived Behavioural Control
+m_pbc <- lmer(temp.z ~ 1 + time_elapsed_r + external.z + intervention * PBC_sz + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+#Moralisation
+m_mrl <- lmer(temp.z ~ 1 + time_elapsed_r + external.z + intervention * moralisation.z + (time_elapsed_r|site_room), data=df_survey, control = lmerControl(optimizer = "bobyqa"))
+
+#MODERATION
+
+#INTENTION: Shows that high intention people actually increase temp post-intervention 
+interactions::probe_interaction(m_int,pred=intervention,modx='Intention_sz')
+
+#ASCRIPTION: 
+interactions::probe_interaction(m_asc,pred=intervention,modx='AscriptionResponsibility_sz')
+
+#PBC: 
+interactions::probe_interaction(m_pbc,pred=intervention,modx='PBC_sz')
+
+#MORALISATION: 
+interactions::probe_interaction(m_mrl,pred=intervention,modx='moralisation.z')
+
+#In all cases the overall temperature settings drops post intervention, but drops more amongst those who have LOWER scores on the key variables
+
+# DV = temp setting; IV = intervention; mediator = intention
+med1 <- psych::mediate('temp.c', 'intervention', m = c('Intention_sz'), data = df_survey)
 med1
 mediate.diagram(med1, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
 
-# DV = temp setting; IV = ascription; mediator = intention
-med2 <- psych::mediate('temp.c', 'AscriptionResponsibility_sz', m = c('Intention_sz'), data = df_survey)
+#Check the relationship between intervention and Intention
+lm(Intention_sz ~ intervention, data = df_survey)
+
+# DV = temp setting; IV = intervention; mediator = Ascription
+med2 <- psych::mediate('temp.c', 'intervention', m = c('AscriptionResponsibility_sz'), data = df_survey)
 med2
 mediate.diagram(med2, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
 
-# DV = temp setting; IV = PBC; mediator = intention
-med3 <- psych::mediate('temp.c', 'PBC_sz', m = c('Intention_sz'), data = df_survey)
+#Check the relationship between intervention and Ascription
+lm(AscriptionResponsibility_sz ~ intervention, data = df_survey)
+
+# DV = temp setting; IV = intervention; mediator = PBC
+med3 <- psych::mediate('temp.c', 'intervention', m = c('PBC_sz'), data = df_survey)
 med3
 mediate.diagram(med3, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
 
-# DV = temp setting; IV = awareness consequences; mediator = intention
-med4 <- psych::mediate('temp.c', 'AwarenessConsequences_sz', m = c('Intention_sz'), data = df_survey)
+#Check the relationship between intervention and PBC
+lm(PBC_sz ~ intervention, data = df_survey)
+
+# DV = temp setting; IV = intervention; mediator = moralisation
+med4 <- psych::mediate('temp.c', 'intervention', m = c('moralisation.z'), data = df_survey)
 med4
 mediate.diagram(med4, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
 
-
-# DV = temp setting; IV = social norm; mediator = intention
-med5 <- psych::mediate('temp.c', 'SocialNorm_sz', m = c('Intention_sz'), data = df_survey)
-med5
-mediate.diagram(med5, main = "c = Direct Effect; c' = Indirect Effect", xlim = c(0,10), ylim = c(2,9), l.cex = .7)
-
-
-plot_model(m1, type = "int")
-plot_model(m1, type = "re")
-plot_model(m1, type = "std")
-
-#refit models with interaction effect
-m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * AwarenessConsequences_sz + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-plot_model(m1, type = "int")
-m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * AscriptionResponsibility_sz + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-plot_model(m1, type = "int")
-m1 <- lmer(temp.c ~ 1 + time_elapsed_r +external.z + intervention * Site * PBC_sz + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-plot_model(m1, type = "int")
-m1 <- lmer(temp.c ~ 1 + time_elapsed_r +external.z + intervention * Site * moralisation.z + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-plot_model(m1, type = "int")
-m1 <- lmer(temp.c ~ 1 + time_elapsed_r + external.z + intervention * Site * Intention_sz + (time_elapsed_r|site_room),data=df_survey)
-summary(m1)
-plot_model(m1, type = "int")
-
-
+#Check the relationship between intervention and moralisation
+lm(moralisation.z ~ intervention, data = df_survey)
 
 #Demographic variables
 #political
@@ -999,7 +989,7 @@ tab_model(m4)
 
 
 ## Bayesian Models
-```{r BayesModels, eval = FALSE}
+```{r BayesModels, eval = FALSE, echo = FALSE}
 
 
 # Fit models using sample data-frame
