@@ -18,7 +18,7 @@ library(lme4)
 library(apaTables)
 
 
-setwd("E:/R files")
+setwd("C:/Users/paulv/Documents/R/thermostat")
 #For Laptop work setwd("/home/vanagpau/R/thermostat")
 #Load Values and Environmental Behaviours (VEB) Questionnaire
 VEB <- fread ("VEB.csv")
@@ -664,10 +664,10 @@ cs %>% select(Q9_1:Q9_7) %>% KMO()
 mMAC <- cs %>% select(Q9_1:Q9_7)
 
 #Code from https://www.statmethods.net/advstats/factor.html
-ev <- eigen(cor(mMAC)) # get eigenvalues
-ap <- parallel(subject=nrow(mMAC),var=ncol(mMAC), rep=100,cent=.05)
-nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
-plotnScree(nS)
+# ev <- eigen(cor(mMAC)) # get eigenvalues
+# ap <- parallel(subject=nrow(mMAC),var=ncol(mMAC), rep=100,cent=.05)
+# nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+# plotnScree(nS)
 
 cs %>% select(Q9_1:Q9_7) %>% cor(use = "complete.obs") %>% fa()
 
@@ -679,10 +679,10 @@ cs %>% select(Q10_1:Q10_7) %>% KMO()
 mMFT <- cs %>% select(Q10_1:Q10_7)
 
 #Code from https://www.statmethods.net/advstats/factor.html
-ev <- eigen(cor(mMFT)) # get eigenvalues
-ap <- parallel(subject=nrow(mMFT),var=ncol(mMFT), rep=100,cent=.05)
-nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
-plotnScree(nS)
+# ev <- eigen(cor(mMFT)) # get eigenvalues
+# ap <- parallel(subject=nrow(mMFT),var=ncol(mMFT), rep=100,cent=.05)
+# nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+# plotnScree(nS)
 
 #FA of BSCS scale
 #Assumption tests: KMO and Barlett's sphericity
@@ -708,7 +708,7 @@ r.test(r12=(with(cs, cor(EAI_mean, likelyPEB_mean))), n=88, r34=(
 
 #Significance test of EAI vs NEP correlations vs actual thermostat control
 r.test(r12=(with(cs, cor(EAI_mean, thermo_change_excdflt))), n=88, r34=(
-  with(cs, cor(NEP_mean, thermo_change_excdflt))), n2=88)
+  with(cs, cor(NEP_mean, thermo_change_excdfltCL))), n2=88)
 
 #Correlations and significance compared to CADM
 

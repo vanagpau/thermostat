@@ -522,7 +522,7 @@ irus_data <- loadRDS("irus_data.rds")
 ```
 
 ##Visualisation
-```{r Visualisation, warning=FALSE}
+```{r Visualisation, eval=FALSE, warning=FALSE}
 
 p <- irus_data %>% 
   group_by(Date) %>% filter((Date > as.Date("2020-01-30") & Date < as.Date("2020-02-14")) |
@@ -661,7 +661,7 @@ ggsave("density plot2.png", plot = d4, device = "png", width = 7, height = 4)
 ```
 
 ## Mixed models
-```{r MixedModels}
+```{r MixedModels, eval=FALSE}
 
 # WITH rescaled time axis, the models converge..
 
@@ -715,7 +715,7 @@ summary(mm7)
 
 
 ## Ordinal models for multi-nomial (categorical) DV
-```{r OrdinalModels, eval=FALSE, echo=FALSE}
+```{r OrdinalModels, eval=TRUE, echo=FALSE}
 
 #Add outcome variable to dataframe
 df$behaviour <- NA
@@ -723,7 +723,6 @@ df$behaviour[df$Setpoint == 19] = "default"
 df$behaviour[df$Setpoint < 19] = "lower"
 df$behaviour[df$Setpoint > 19] = "higher"
 df$behaviour <- factor(df$behaviour, ordered = TRUE, levels = c("lower", "default", "higher"))
-
 
 # Ordinal dependent variable models from https://rpubs.com/rslbliss/r_logistic_ws
 
@@ -746,51 +745,17 @@ df$Address <- factor(df$Address)
 #same for Site
 df$Site <- factor(df$Site)
 
-## Attempt to fit Ordinal model with random effects - this attempt didn't work
+#Model 2 pro-environmental behaviour as 1 otherwise 0 (logisitic regression) with random effect
+df$behaviour <- 0
+df$behaviour[df$Setpoint < 19] <- 1
+m2 <- glmer(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (1|site_room), data = df, family = "binomial", nAGQ = 0, control = glmerControl(optimizer="bobyqa"))
+summary(m2)
 
-#Fit random effect grouping under participant using clmm2 from ordinal package
-# model_OD2 <- ordinal::clmm2(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius,
-#                           random = Address, data = df, Hess=TRUE, nAGQ = 1)
-# summary(model_OD2)
-
-# Warning: clmm2 may not have converged:
-#   optimizer 'ucminf' terminated with max|gradient|: 60.803516159627
-
-#saveRDS(model_OD2, file = "model_OD2.rds")
-model_OD2 <- readRDS(file = "model_OD2.rds")
-summary(model_OD2)
-
-# this doesn't converge either
-# Warning: clmm2 may not have converged:
-#   optimizer 'ucminf' terminated with max|gradient|: 0.395293339186445
-# model_OD3 <- clmm2(behaviour ~ time_elapsed_r + intervention + Ext_temp_celsius,
-#                           random = Address, data = df, Hess=TRUE, nAGQ = 1)
-# summary(model_OD3)
-
-
-
-## Attempt 2 using GLMMadaptive package
-
-#need to create "cohort" variable (see https://drizopoulos.github.io/GLMMadaptive/articles/Ordinal_Mixed_Models.html)
-
-cr_vals <- cr_setup(df$behaviour)
-cr_data <- df[cr_vals$subs, ]
-cr_data$y_new <- cr_vals$y
-cr_data$cohort <- cr_vals$cohort
-
-# This runs and converges, but only gives coefficients for behaviour >= default (ie. higher+default versus lower), which is not what we want - the example in the documentation does the same thing.. je ne comprends pas!
-m_OD1 <- mixed_model(y_new ~ cohort + intervention + time_elapsed_r, random = ~ time_elapsed_r | site_room, data = cr_data, family = binomial())
-saveRDS(m_OD1, file = "m_OD1.rds")
-summary(m_OD1)
-
-#Attempt multi-nomial mixed effect model - documentation for this is sparse and so I'm not even sure the syntax is right, but it crashes R every time..
-
-# mixcat::npmlt(df$behaviour ~ df$time_elapsed_r + df$intervention*df$Site + df$Ext_temp_celsius, random=~1+df$time_elapsed_r, id = df$Address)
 
 ```
 
 ## Survey data
-```{r SurveyDataMixedModels}
+```{r SurveyDataMixedModels, eval=FALSE}
 
 
 ####Manipulation effect in sub-sample with questionnaire data
@@ -879,7 +844,7 @@ confint(m1)
 
 
 # Moderation / Mediation effects 
-```{r Med/Mod Effects}
+```{r Med/Mod Effects, eval=FALSE}
 
 #For moderation convert intervention to dummy variable from factor
 df_survey$intervention <- as.numeric(df_survey$intervention)
