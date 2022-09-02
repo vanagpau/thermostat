@@ -751,6 +751,14 @@ df$behaviour[df$Setpoint < 19] <- 1
 m2 <- glmer(behaviour ~ time_elapsed_r + intervention*Site + Ext_temp_celsius + (1|site_room), data = df, family = "binomial", nAGQ = 0, control = glmerControl(optimizer="bobyqa"))
 summary(m2)
 
+sum(df$behaviour == 0 & df$intervention == "Before")
+sum(df$behaviour == 0 & df$intervention == "After")
+sum(df$behaviour == 1 & df$intervention == "Before")
+sum(df$behaviour == 1 & df$intervention == "After")
+
+sum(df$behaviour == 1 & df$intervention == "Before")/(sum(df$behaviour == 0 & df$intervention == "Before")+sum(df$behaviour == 1 & df$intervention == "Before"))
+
+sum(df$behaviour == 1 & df$intervention == "After")/(sum(df$behaviour == 0 & df$intervention == "After")+sum(df$behaviour == 1 & df$intervention == "After"))
 
 ```
 
